@@ -1,5 +1,9 @@
 #pragma once
 #include "Graphics.h"
+#include <vector>
+#include "Shader.h"
+#include "Material.h"
+#include "Mesh.h"
 
 class Program
 {
@@ -12,5 +16,9 @@ private:
 	void Cleanup();
 
 	GLFWwindow* window;
+
+	std::vector<Shader*> shaders;
+	std::vector<Material*> materials;
+
 };
 
