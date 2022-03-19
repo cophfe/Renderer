@@ -8,7 +8,8 @@ class Mesh
 public:
 	Mesh() { created = false; }
 
-	void Init(MeshData& data, bool isStatic = true, bool storeMeshOnCPU = false); //will clone data if is dynamic
+	Mesh* Init(MeshData& data, bool isStatic = true, bool storeMeshOnCPU = false); 
+	static Mesh* InitNew(MeshData& data, bool isStatic = true, bool storeMeshOnCPU = false);
 	void Render() const; //shader program and transform should be set up before this is called. 
 
 	inline MeshData* GetStoredMeshData() { return data; } //cam be null
@@ -20,6 +21,7 @@ public:
 	Mesh& operator= (const Mesh& other) = delete;
 
 private:
+	
 	GLuint vertexArray;
 	//vertex info is stored in one big array, but is not interleaved. this is not good for dynamic meshes
 	GLuint vertexBuffer; 

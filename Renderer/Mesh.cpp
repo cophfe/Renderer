@@ -1,20 +1,32 @@
 #include "Mesh.h"
+#include <iostream>
 
-void Mesh::Init(MeshData& data, bool isStatic, bool storeMeshOnCPU)
+Mesh* Mesh::Init(MeshData& data, bool isStatic, bool storeMeshOnCPU)
 {
+	if (created)
+	{
+		auto msg = "Failed to create mesh: Mesh was already created.";
+		throw msg;
+	}
+
 	indicesCount = data.indexCount;
 	verticesCount = data.vertexCount;
+	
+	//set vertex array
+	glGenVertexArrays(1, &vertexArray);
+	glBindVertexArray(vertexArray);
 
 	//Setup vertex buffer
 	glGenBuffers(1, &vertexBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+
 
 	int bufferSize = data.GetBufferSize();
 	void* meshBuffer = data.GetBuffer();
 	
 	if (!meshBuffer)
 	{
-		throw "MeshData was empty, mesh could not be created\n";
+		throw "MeshData was empty, mesh could not be created";
 	}
 
 	if (isStatic)
@@ -23,28 +35,23 @@ void Mesh::Init(MeshData& data, bool isStatic, bool storeMeshOnCPU)
 		glBufferData(GL_ARRAY_BUFFER, bufferSize, meshBuffer, GL_DYNAMIC_DRAW);
 
 	//setup vertex attributes
-	glGenVertexArrays(1, &vertexArray);
-	glBindVertexArray(vertexArray);
-
 	//vertex attributes are stored sequentially in the same buffer
 	//Position
-	glVertexAttribPointer(0, verticesCount, GL_FLOAT_VEC3, GL_FALSE, sizeof(MeshData::Position), nullptr);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(MeshData::Position), nullptr);
 	glEnableVertexAttribArray(0);
 	uint16_t offset = verticesCount * sizeof(MeshData::Position);
 	//Normal
-	glVertexAttribPointer(1, verticesCount, GL_INT_2_10_10_10_REV, GL_FALSE, sizeof(MeshData::Normal), (void*)offset);
+	glVertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, GL_FALSE, sizeof(MeshData::Normal), (void*)offset);
 	glEnableVertexAttribArray(1);
 	offset += verticesCount * sizeof(MeshData::Normal);
 	//Colour
-	glVertexAttribPointer(2, verticesCount * 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(MeshData::Colour), (void*)offset);
+	glVertexAttribPointer(2, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(MeshData::Colour), (void*)offset);
 	glEnableVertexAttribArray(2);
 	offset += verticesCount * sizeof(MeshData::Colour);
 	//TexCoord
-	glVertexAttribPointer(3, verticesCount * 2, GL_SHORT, GL_FALSE, sizeof(MeshData::TexCoord), (void*)offset);
+	glVertexAttribPointer(3, 2, GL_SHORT, GL_TRUE, sizeof(MeshData::TexCoord), (void*)offset);
 	glEnableVertexAttribArray(3);
-
-	glBindVertexArray(0);
-
+	
 	//Now set up element buffer
 	if (indicesCount)
 	{
@@ -63,6 +70,16 @@ void Mesh::Init(MeshData& data, bool isStatic, bool storeMeshOnCPU)
 		this->data = nullptr;
 
 	created = true;
+
+
+	return this;
+}
+
+Mesh* Mesh::InitNew(MeshData& data, bool isStatic, bool storeMeshOnCPU)
+{
+	Mesh* mesh = new Mesh();
+	mesh->Init(data, isStatic, storeMeshOnCPU);
+	return mesh;
 }
 
 void Mesh::Render() const
@@ -72,9 +89,7 @@ void Mesh::Render() const
 	if (indicesCount)
 		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
 	else
-		glDrawArrays(GL_TRIANGLES, 0, GL_TRIANGLES);
-
-	glBindVertexArray(0);
+		glDrawArrays(GL_TRIANGLES, 0, verticesCount);
 }
 
 Mesh::Mesh(Mesh&& other) noexcept

@@ -1,4 +1,5 @@
 #pragma once
+#include "Math.h"
 #include "Graphics.h"
 #include "Shader.h"
 
@@ -15,7 +16,8 @@ class Material
 public:
 	Material() { loaded = false; }
 
-	void Init(Shader& vertex, Shader& fragment);
+	Material* Init(Shader& vertex, Shader& fragment);
+	static Material* InitNew(Shader& vertex, Shader& fragment);
 	void Use() const;
 	static void ClearMaterial();
 
@@ -23,9 +25,33 @@ public:
 
 	int GetInt(const char* name) const;
 	float GetFloat(const char* name) const;
-	
+	Vector2&& GetVector2(const char* name) const;
+	Vector3&& GetVector3(const char* name) const;
+	Vector4&& GetVector4(const char* name) const;
+	Matrix3x3&& GetMatrix3(const char* name) const;
+	Matrix4x4&& GetMatrix4(const char* name) const;
+	int GetInt(int id) const;
+	float GetFloat(int id) const;
+	Vector2&& GetVector2(int id) const;
+	Vector3&& GetVector3(int id) const;
+	Vector4&& GetVector4(int id) const;
+	Matrix3x3&& GetMatrix3(int id) const;
+	Matrix4x4&& GetMatrix4(int id) const;
+
 	void SetUniform(const char* name, int value) const;
 	void SetUniform(const char* name, float value) const;
+	void SetUniform(const char* name, const Vector2& value) const;
+	void SetUniform(const char* name, const Vector3& value) const;
+	void SetUniform(const char* name, const Vector4& value) const;
+	void SetUniform(const char* name, const Matrix3x3& value, GLboolean transpose = GL_FALSE) const;
+	void SetUniform(const char* name, const Matrix4x4& value, GLboolean transpose = GL_FALSE) const;
+	void SetUniform(int id, int value) const;
+	void SetUniform(int id, float value) const;
+	void SetUniform(int id, const Vector2& value) const;
+	void SetUniform(int id, const Vector3& value) const;
+	void SetUniform(int id, const Vector4& value) const;
+	void SetUniform(int id, const Matrix3x3& value, GLboolean transpose = GL_FALSE) const;
+	void SetUniform(int id, const Matrix4x4& value, GLboolean transpose = GL_FALSE) const;
 
 	inline bool IsLoaded() { return loaded; }
 	inline GLuint GetProgramID() { return programID; }
@@ -38,6 +64,7 @@ public:
 	Material& operator= (const Material& other) = delete;
 private:
 	static uint32_t materialIDCounter;
+	static GLuint currentMaterial;
 	uint32_t materialID;
 
 	GLuint programID;

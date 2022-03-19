@@ -25,16 +25,16 @@ struct MeshData
 	typedef unsigned int Index;
 	typedef unsigned int Size;
 
-	static MeshData&& AllocateMeshData(Size vertexCount, Size indexCount);
+	MeshData* AllocateMeshData(Size vertexCount, Size indexCount);
 
-	void SetPositions(Position* positions, Size count, bool clone = false);
-	void SetNormals(Normal* normals, Size count, bool clone = false);
+	void SetPositions(Position* positions, Size count);
+	void SetNormals(Normal* normals, Size count);
 	void SetNormals(Vector3* normals, Size count);
-	void SetColours(Colour* colours, Size count, bool clone = false);
+	void SetColours(Colour* colours, Size count);
 	void SetColours(Vector4* colours, Size count);
-	void SetTexCoords(TexCoord* coords, Size count, bool clone = false);
+	void SetTexCoords(TexCoord* coords, Size count);
 	void SetTexCoords(Vector2* coords, Size count);
-	void SetIndices(Index* indices, Size count, bool clone = false);
+	void SetIndices(Index* indices, Size count);
 	
 	static Normal PackNormal(const Vector3& normal);
 	static Colour PackColour(const Vector4& colour);
@@ -59,14 +59,11 @@ struct MeshData
 	inline void* GetBuffer() { return positions; }
 	Size GetBufferSize();
 
+	MeshData() { positions = nullptr; }
 	MeshData(MeshData&& other) noexcept;
 	MeshData& operator= (MeshData&& other) noexcept;
 	~MeshData();
 	MeshData(const MeshData& other);
 	MeshData& operator= (const MeshData& other);
-
-
-private:
-	MeshData() { positions = nullptr; }
 };
 

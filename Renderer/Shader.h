@@ -3,14 +3,24 @@
 #include <sstream>
 #include <iostream>
 #include <filesystem>
+#include <exception>
 
 #include "Graphics.h"
 
 class Shader
 {
 public:
+	enum class Type : GLenum
+	{
+		Vertex = GL_VERTEX_SHADER,
+		Fragment = GL_FRAGMENT_SHADER,
+		Compute = GL_COMPUTE_SHADER,
+		Geometry = GL_GEOMETRY_SHADER
+	};
+
 	Shader() { loaded = false; }
-	void Init(const char* path);
+	Shader* Init(const char* path, Type type);
+	static Shader* InitNew(const char* path, Type type);
 
 	bool ShouldRecompile();
 	void Recompile();

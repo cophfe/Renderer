@@ -1,60 +1,48 @@
 #include "MeshData.h"
 
-MeshData&& MeshData::AllocateMeshData(Size vertexCount, Size indexCount)
+MeshData* MeshData::AllocateMeshData(Size vertexCount, Size indexCount)
 {
 	uint32_t size = vertexCount * (3 * sizeof(Vector3) + sizeof(Vector2));
 	void* data = malloc(size);
-	MeshData mesh;
-	
-	int position = 0;
+	memset(data, 0, size);
 
-	mesh.positions = (Position*)data;
+	this->vertexCount = vertexCount;
+	this->indexCount = indexCount;
+	size_t position = (size_t)data;
+
+	positions = (Position*)position;
 	position += sizeof(Position) * vertexCount;
 
-	mesh.normals = (Normal*)((uint32_t)data + position);
+ 	normals = (Normal*)position;
 	position += sizeof(Normal) * vertexCount;
 
-	mesh.colours = (Colour*)((uint32_t)data + position);
+	colours = (Colour*)position;
 	position += sizeof(Colour) * vertexCount;
 
-	mesh.texCoords = (TexCoord*)((uint32_t)data + position);
+	texCoords = (TexCoord*)position;
 
 	if (indexCount)
-		mesh.indices = new Index[indexCount];
+		indices = new Index[indexCount];
 	else
-		mesh.indices = nullptr;
+		indices = nullptr;
 
-	return std::move(mesh);
+	return this;
 }
 
-void MeshData::SetPositions(Position* positions, Size count, bool clone)
+void MeshData::SetPositions(Position* positions, Size count)
 {
 	if (count != vertexCount)
 		throw "Array size does not match vertex count\n";
 
-	if (clone)
-	{
-		memcpy(this->positions, positions, count * sizeof(Position));
-	}
-	else
-	{
-		this->positions = positions;
-	}
+	memcpy(this->positions, positions, count * sizeof(Position));
 }
 
-void MeshData::SetNormals(Normal* normals, Size count, bool clone)
+void MeshData::SetNormals(Normal* normals, Size count)
 {
 	if (count != vertexCount)
 		throw "Array size does not match vertex count\n";
 
-	if (clone)
-	{
-		memcpy(this->normals, normals, count * sizeof(Normal));
-	}
-	else
-	{
-		this->normals = normals;
-	}
+	memcpy(this->normals, normals, count * sizeof(Normal));
 }
 
 void MeshData::SetNormals(Vector3* normals, Size count)
@@ -68,19 +56,12 @@ void MeshData::SetNormals(Vector3* normals, Size count)
 	}
 }
 
-void MeshData::SetColours(Colour* colours, Size count, bool clone)
+void MeshData::SetColours(Colour* colours, Size count)
 {
 	if (count != vertexCount)
 		throw "Array size does not match vertex count\n";
 
-	if (clone)
-	{
-		memcpy(this->colours, colours, count * sizeof(Colour));
-	}
-	else
-	{
-		this->colours = colours;
-	}
+	memcpy(this->colours, colours, count * sizeof(Colour));
 }
 
 void MeshData::SetColours(Vector4* colours, Size count)
@@ -94,19 +75,12 @@ void MeshData::SetColours(Vector4* colours, Size count)
 	}
 }
 
-void MeshData::SetTexCoords(TexCoord* coords, Size count, bool clone)
+void MeshData::SetTexCoords(TexCoord* coords, Size count)
 {
 	if (count != vertexCount)
 		throw "Array size does not match vertex count\n";
 	
-	if (clone)
-	{
-		memcpy(this->texCoords, texCoords, count * sizeof(TexCoord));
-	}
-	else
-	{
-		this->texCoords = coords;
-	}
+	memcpy(this->texCoords, texCoords, count * sizeof(TexCoord));
 }
 
 void MeshData::SetTexCoords(Vector2* coords, Size count)
@@ -140,7 +114,7 @@ MeshData::Normal MeshData::PackNormal(const Vector3& normal)
 MeshData::Colour MeshData::PackColour(const Vector4& colour)
 {
 	//4x GL_UNSIGNED_BYTE
-	return Colour((GLubyte)(colour.x * 256), (GLubyte)(colour.y * 256), (GLubyte)(colour.z * 256), (GLubyte)(colour.w * 256));
+	return Colour((GLubyte)(colour.x * 255), (GLubyte)(colour.y * 255), (GLubyte)(colour.z * 255), (GLubyte)(colour.w * 255));
 }
 
 MeshData::TexCoord MeshData::PackTexCoord(const Vector2 texcoord)
@@ -149,19 +123,12 @@ MeshData::TexCoord MeshData::PackTexCoord(const Vector2 texcoord)
 	return TexCoord((GLshort)(texcoord.x * 256), (GLshort)(texcoord.y * 256));
 }
 
-void MeshData::SetIndices(Index* indices, Size count, bool clone)
+void MeshData::SetIndices(Index* indices, Size count)
 {
 	if (count != indexCount)
 		throw "Array size does not match index count\n";
 
-	if (clone)
-	{
-		memcpy(this->indices, indices, count * sizeof(Index));
-	}
-	else
-	{
-		this->indices = indices;
-	}
+	memcpy(this->indices, indices, count * sizeof(Index));
 }
 
 MeshData::Size MeshData::GetBufferSize()

@@ -1,46 +1,66 @@
 #include "Material.h"
 
 uint32_t Material::materialIDCounter = 0;
+GLuint Material::currentMaterial = -1;
 
-void Material::Init(Shader& vertex, Shader& fragment)
+Material* Material::Init(Shader& vertex, Shader& fragment)
 {
+	if (loaded)
+	{
+		auto msg = "Failed to create material using vertex: " + std::string(vertex.GetFilePath()) + "and fragment: " + std::string(fragment.GetFilePath()) + ":\nMaterial used was already loaded.";
+		throw std::runtime_error(msg);
+	}
+
 	this->vertex = &vertex;
 	this->fragment = &fragment;
 
+	//this be based on finn's implimentation
 	programID = glCreateProgram();
 	glAttachShader(programID, vertex);
 	glAttachShader(programID, fragment);
-
 	glLinkProgram(programID);
 
 	GLint success = 0;
 	glGetProgramiv(programID, GL_LINK_STATUS, &success);
-	if (!success)
+
+	if (success == GL_FALSE)
 	{
 		loaded = false;
 
 		GLchar log[512];
-		glGetShaderInfoLog(programID, 512, nullptr, log);
-
+		glGetProgramInfoLog(programID, 512, NULL, log);
 		auto msg = "Failed to link shader program using vertex: " + std::string(vertex.GetFilePath()) + "and fragment: " + std::string(fragment.GetFilePath()) + ":\n" + log;
-		throw msg;
-		return;
+		throw std::runtime_error(msg);
 	}
 
 	loaded = true;
 
 	materialID = materialIDCounter;
 	materialIDCounter++;
+
+	return this;
+}
+
+Material* Material::InitNew(Shader& vertex, Shader& fragment)
+{
+	Material* material = new Material;
+	return material->Init(vertex, fragment);
 }
 
 void Material::Use() const
 {
-	glUseProgram(programID);
+	if (currentMaterial != materialID)
+	{
+		glUseProgram(programID);
+		currentMaterial = materialID;
+	}
 }
 
 void Material::ClearMaterial()
 {
 	glUseProgram(0);
+	currentMaterial = -1;
+	
 	//glActiveTexture(0);
 	//glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -50,23 +70,170 @@ GLuint Material::GetUniformID(const char* name) const
 	return glGetUniformLocation(programID, name);
 }
 
+#pragma region Get Uniform
 int Material::GetInt(const char* name) const
 {
-	return 0;
+	return GetInt(glGetUniformLocation(programID, name));
 }
 
 float Material::GetFloat(const char* name) const
 {
-	return 0;
+	return GetFloat (glGetUniformLocation(programID, name));
 }
 
+Vector2&& Material::GetVector2(const char* name) const
+{
+	return GetVector2(glGetUniformLocation(programID, name));
+}
+
+Vector3&& Material::GetVector3(const char* name) const
+{
+	return GetVector3(glGetUniformLocation(programID, name));
+}
+
+Vector4&& Material::GetVector4(const char* name) const
+{
+	return GetVector4(glGetUniformLocation(programID, name));
+}
+
+Matrix3x3&& Material::GetMatrix3(const char* name) const
+{
+	return GetMatrix3(glGetUniformLocation(programID, name));
+}
+
+Matrix4x4&& Material::GetMatrix4(const char* name) const
+{
+	return GetMatrix4(glGetUniformLocation(programID, name));
+}
+
+int Material::GetInt(int id) const
+{
+	int value;
+	glGetUniformiv(programID, id, &value);
+	return value;
+}
+
+float Material::GetFloat(int id) const
+{
+	float value;
+	glGetUniformfv(programID, id, &value);
+	return value;
+}
+
+Vector2&& Material::GetVector2(int id) const
+{
+	Vector2 value;
+	glGetnUniformfv(programID, id, 2, (GLfloat*)&value[0]);
+	return std::move(value);
+}
+
+Vector3&& Material::GetVector3(int id) const
+{
+	Vector3 value;
+	glGetnUniformfv(programID, id, 3, (GLfloat*)&value[0]);
+	return std::move(value);
+}
+
+Vector4&& Material::GetVector4(int id) const
+{
+	Vector4 value;
+	glGetnUniformfv(programID, id, 4, (GLfloat*)&value[0]);
+	return std::move(value);
+}
+
+Matrix3x3&& Material::GetMatrix3(int id) const
+{
+	Matrix3x3 value;
+	glGetnUniformfv(programID, id, 9, (GLfloat*)&value[0]); //these values are probably organised incorrectly, if they even come out at all
+	return std::move(value);
+}
+
+Matrix4x4&& Material::GetMatrix4(int id) const
+{
+	Matrix4x4 value;
+	glGetnUniformfv(programID, id, 16, (GLfloat*)&value[0]);
+	return std::move(value);
+}
+#pragma endregion
+
+#pragma region Set Uniform
 void Material::SetUniform(const char* name, int value) const
 {
+	SetUniform(glGetUniformLocation(programID, name), value);
 }
 
 void Material::SetUniform(const char* name, float value) const
 {
+	SetUniform(glGetUniformLocation(programID, name), value);
 }
+
+void Material::SetUniform(const char* name, const Vector2& value) const
+{
+	SetUniform(glGetUniformLocation(programID, name), value);
+}
+
+void Material::SetUniform(const char* name, const Vector3& value) const
+{
+	SetUniform(glGetUniformLocation(programID, name), value);
+}
+
+void Material::SetUniform(const char* name, const Vector4& value) const
+{
+	SetUniform(glGetUniformLocation(programID, name), value);
+}
+
+void Material::SetUniform(const char* name, const Matrix3x3& value, GLboolean transpose) const
+{
+	SetUniform(glGetUniformLocation(programID, name), value, transpose);
+}
+
+void Material::SetUniform(const char* name, const Matrix4x4& value, GLboolean transpose) const
+{
+	SetUniform(glGetUniformLocation(programID, name), value, transpose);
+}
+
+void Material::SetUniform(int id, int value) const
+{
+	Use();
+	glUniform1i(id, value);
+}
+
+void Material::SetUniform(int id, float value) const
+{
+	Use();
+	glUniform1f(id, value);
+}
+
+void Material::SetUniform(int id, const Vector2& value) const
+{
+	Use();
+	glUniform1fv(id, 2, (GLfloat*)&(value[0]));
+}
+
+void Material::SetUniform(int id, const Vector3& value) const
+{
+	Use();
+	glUniform1fv(id, 3, (GLfloat*)&(value[0]));
+}
+
+void Material::SetUniform(int id, const Vector4& value) const
+{
+	Use();
+	glUniform1fv(id, 4, (GLfloat*)&(value[0]));
+}
+
+void Material::SetUniform(int id, const Matrix3x3& value, GLboolean transpose) const
+{
+	Use();
+	glUniformMatrix3fv(id, 1, transpose, (GLfloat*)&(value[0]));
+}
+
+void Material::SetUniform(int id, const Matrix4x4& value, GLboolean transpose) const
+{
+	Use();
+	glUniformMatrix4fv(id, 1, transpose, (GLfloat*)&(value[0]));
+}
+#pragma endregion
 
 Material::Material(Material&& other) noexcept
 {
@@ -74,6 +241,7 @@ Material::Material(Material&& other) noexcept
 	vertex = other.vertex;
 	programID = other.programID;
 	loaded = other.loaded;
+	materialID = other.materialID;
 
 	other.loaded = false;
 }
@@ -89,6 +257,7 @@ Material& Material::operator=(Material&& other) noexcept
 	vertex = other.vertex;
 	programID = other.programID;
 	loaded = other.loaded;
+	materialID = other.materialID;
 
 	other.loaded = false;
 	return *this;
