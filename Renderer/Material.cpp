@@ -235,6 +235,22 @@ void Material::SetUniform(int id, const Matrix4x4& value, GLboolean transpose) c
 }
 #pragma endregion
 
+void Material::ReloadMaterial()
+{
+	glAttachShader(programID, vertex->GetId());
+	glAttachShader(programID, fragment->GetId());
+	glLinkProgram(programID);
+
+	GLint success = 0;
+	glGetProgramiv(programID, GL_LINK_STATUS, &success);
+
+	if (success == GL_FALSE)
+	{
+		auto msg = "Failed to reload material using vertex: " + std::string(vertex->GetFilePath()) + "and fragment: " + std::string(fragment->GetFilePath()) + "\n";
+		std::cout << msg;
+	}
+}
+
 Material::Material(Material&& other) noexcept
 {
 	fragment = other.fragment;

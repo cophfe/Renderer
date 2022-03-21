@@ -8,12 +8,12 @@ Transform::Transform()
 	UpdateMatrix();
 };
 
-void Transform::SetPosition(Vector3 position)
+void Transform::SetPosition(const Vector3& position)
 {
 	this->position = position;
 }
 
-void Transform::SetRotation(Quaternion rotation)
+void Transform::SetRotation(const Quaternion& rotation)
 {
 	this->rotation = rotation;
 }
@@ -32,4 +32,19 @@ void Transform::UpdateMatrix()
 	matrix = matrix * glm::toMat4(rotation);
 	matrix = glm::scale(matrix, scale);
 
+}
+
+Vector3&& Transform::GetForward() const
+{
+	return matrix[2];
+}
+
+Vector3&& Transform::GetUp() const
+{
+	return matrix[1];
+}
+
+Vector3&& Transform::GetRight() const
+{
+	return matrix[0];
 }

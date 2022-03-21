@@ -29,6 +29,7 @@ MeshData* MeshData::AllocateMeshData(Size vertexCount, Size indexCount)
 	return this;
 }
 
+#pragma region Set Data
 void MeshData::SetPositions(Position* positions, Size count)
 {
 	if (count != vertexCount)
@@ -50,7 +51,7 @@ void MeshData::SetNormals(Vector3* normals, Size count)
 	if (count != vertexCount)
 		throw "Array size does not match vertex count\n";
 
-	for (Size i = 0; i < count; i++)
+	for (Size i = 0; i < vertexCount; i++)
 	{
 		this->normals[i] = PackNormal(normals[i]);
 	}
@@ -69,7 +70,7 @@ void MeshData::SetColours(Vector4* colours, Size count)
 	if (count != vertexCount)
 		throw "Array size does not match vertex count\n";
 
-	for (Size i = 0; i < count; i++)
+	for (Size i = 0; i < vertexCount; i++)
 	{
 		this->colours[i] = PackColour(colours[i]);
 	}
@@ -94,6 +95,50 @@ void MeshData::SetTexCoords(Vector2* coords, Size count)
 	}
 }
 
+void MeshData::SetVerticesData(VertexData* vertices, Size count)
+{
+	if (count != vertexCount)
+		throw "Array size does not match vertex count\n";
+
+	for (Size i = 0; i < vertexCount; i++)
+	{
+		positions[i] = vertices[i].pos;
+		texCoords[i] = PackTexCoord(vertices[i].texCoord);
+		colours[i] = PackColour(vertices[i].colour);
+		normals[i] = PackNormal(vertices[i].normal);
+	}
+}
+
+void MeshData::CalculateNormals(bool clockwise)
+{
+	float multiplier = clockwise ? -1 : 1;
+
+	for (size_t i = 0; i + 2 < indexCount; i += 3)
+	{
+		size_t i1 = indices[i];
+		size_t i2 = indices[i + 1];
+		size_t i3 = indices[i + 2];
+
+		Vector3 normal = glm::cross(positions[i2] - positions[i1], positions[i3] - positions[i1]);
+		Normal n = PackNormal(multiplier * glm::normalize(normal));
+		
+		normals[i1] = n;
+		normals[i2] = n;
+		normals[i3] = n;
+	}
+}
+
+void MeshData::SetIndices(Index* indices, Size count)
+{
+	if (count != indexCount)
+		throw "Array size does not match index count\n";
+
+	memcpy(this->indices, indices, count * sizeof(Index));
+}
+
+#pragma endregion
+
+#pragma region Pack Data
 MeshData::Normal MeshData::PackNormal(const Vector3& normal)
 {
 	//formatted as GL_INT_2_10_10_10_REV
@@ -122,14 +167,7 @@ MeshData::TexCoord MeshData::PackTexCoord(const Vector2 texcoord)
 	//2x GL_SHORT
 	return TexCoord((GLshort)(texcoord.x * 256), (GLshort)(texcoord.y * 256));
 }
-
-void MeshData::SetIndices(Index* indices, Size count)
-{
-	if (count != indexCount)
-		throw "Array size does not match index count\n";
-
-	memcpy(this->indices, indices, count * sizeof(Index));
-}
+#pragma endregion
 
 MeshData::Size MeshData::GetBufferSize()
 {

@@ -5,25 +5,35 @@
 //used to create a mesh
 struct MeshData
 {
-	struct Colour {
+	typedef glm::vec<3, float> Position;
+	typedef uint32_t Normal;
+	struct Colour 
+	{
 		Colour(GLubyte r, GLubyte g, GLubyte b, GLubyte a) : r(r), g(g), b(b), a(a) {}
 
 		GLubyte r, g, b, a;
 	};
-	struct TexCoord {
+
+	struct TexCoord 
+	{
 		TexCoord(GLshort x, GLshort y) : x(x), y(y) {}
 
 		GLshort x, y;
 	};
 
-	//these are set here so the type can be easily changed (well, kinda easily)
-	typedef glm::vec<3, float> Position;
-	typedef uint32_t Normal;
-	//typedef glm::vec<4, GLubyte> Colour;
-	//typedef glm::vec<2, GLshort> TexCoord;
-
 	typedef unsigned int Index;
 	typedef unsigned int Size;
+
+	struct VertexData 
+	{
+		VertexData() = default;
+		VertexData(Vector3 pos, Vector2 texCoord, Vector3 normal = Vector3(), Vector4 colour = Vector4()) : pos(pos), normal(normal), colour(colour), texCoord(texCoord) {}
+
+		Vector3 pos;
+		Vector3 normal;
+		Vector4 colour;
+		Vector2 texCoord;
+	};
 
 	MeshData* AllocateMeshData(Size vertexCount, Size indexCount);
 
@@ -35,11 +45,13 @@ struct MeshData
 	void SetTexCoords(TexCoord* coords, Size count);
 	void SetTexCoords(Vector2* coords, Size count);
 	void SetIndices(Index* indices, Size count);
+	void SetVerticesData(VertexData* vertices, Size count);
 	
+	void CalculateNormals(bool clockwise);
+
 	static Normal PackNormal(const Vector3& normal);
 	static Colour PackColour(const Vector4& colour);
 	static TexCoord PackTexCoord(const Vector2 texcoord);
-	
 
 	//https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
 	//https://anteru.net/blog/2016/storing-vertex-data-to-interleave-or-not-to-interleave/

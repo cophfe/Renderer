@@ -23,6 +23,7 @@ public:
 
 	GLuint GetUniformID(const char* name) const;
 
+#pragma region Uniform Set Get
 	int GetInt(const char* name) const;
 	float GetFloat(const char* name) const;
 	Vector2&& GetVector2(const char* name) const;
@@ -52,10 +53,14 @@ public:
 	void SetUniform(int id, const Vector4& value) const;
 	void SetUniform(int id, const Matrix3x3& value, GLboolean transpose = GL_FALSE) const;
 	void SetUniform(int id, const Matrix4x4& value, GLboolean transpose = GL_FALSE) const;
+#pragma endregion
 
 	inline bool IsLoaded() { return loaded; }
 	inline GLuint GetProgramID() { return programID; }
 	inline operator GLuint() { return programID; }
+
+	inline bool UsesShader(Shader* shader) { return shader == fragment || shader == vertex; }
+	void ReloadMaterial();
 
 	Material(Material&& other) noexcept;
 	Material& operator= (Material&& other) noexcept;

@@ -4,6 +4,7 @@
 
 int main()
 {
-	Program program;
-	program.Run();
+	Program::CreateInstance();
+	Program::GetInstance()->Run();
+	Program::DestroyInstance();
 }

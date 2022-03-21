@@ -13,5 +13,5 @@ void Object::Render()
 void Object::UpdateUniform()
 {
 	transform.UpdateMatrix();
-	material->SetUniform("objectMatrix", transform.GetMatrix());
+	material->SetUniform("ObjectToWorldMatrix", transform.GetMatrix());
 }
