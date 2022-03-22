@@ -23,27 +23,6 @@ void Program::Run()
 	Cleanup();
 }
 
-Material* Program::CreateMaterial(Shader* vertex, Shader* fragment)
-{
-	Material* material = Material::InitNew(*vertex, *fragment);
-	materials.push_back(material);
-	return material;
-}
-
-Shader* Program::CreateShader(const char* path, Shader::Type type)
-{
-	Shader* shader = Shader::InitNew(path, type);
-	shaders.push_back(shader);
-	return shader;
-}
-
-Mesh* Program::CreateMesh(MeshData& data, bool isStatic, bool storeMeshOnCPU)
-{
-	Mesh* mesh = Mesh::InitNew(data, isStatic, storeMeshOnCPU);
-	meshes.push_back(mesh);
-	return mesh;
-}
-
 Object* Program::CreateObject(Mesh* mesh, Material* material)
 {
 	Object* object = new Object(mesh, material);
@@ -56,93 +35,39 @@ void Program::Init()
 	InitGraphics();
 	InitCallbacks();
 
-	Vector2Int size;
-	glfwGetWindowSize(window, &size.x, &size.y);
-	camera = new Camera(glm::radians(65.0f), size.x / (float)size.y, 0.001, 100);
-
 	double x, y;
-	glfwGetCursorPos(window, &x, &y);
+	glfwGetCursorPos(GetWindow(), &x, &y);
 	lastMousePosition = Vector2(x, y);
 
 	lastTime = glfwGetTime();
 	shaderRecompileTimer = shaderRecompileTime;
 
-	Shader* fragment = CreateShader("Default.fsd", Shader::Type::Fragment);
-	Shader* vertex = CreateShader("Default.vsd", Shader::Type::Vertex);
-	Material* defaultMaterial = CreateMaterial(vertex, fragment);
+	Shader* fragment = renderer.CreateShader("Default.fsd", Shader::Type::Fragment);
+	Shader* vertex = renderer.CreateShader("Default.vsd", Shader::Type::Vertex);
+	Material* defaultMaterial = renderer.CreateMaterial(vertex, fragment);
 
 	MeshData data;
 	MeshPrimitive::SetCube(data);
 	memset(data.colours, 0xFF, data.vertexCount * sizeof(MeshData::Colour));
 
-	Mesh* mesh = CreateMesh(data);
+	Mesh* mesh = renderer.CreateMesh(data);
 	auto& t = CreateObject(mesh, defaultMaterial)->GetTransform();
 	t.SetPosition(Vector3(0, 0, -1));
 	
-	//t = CreateObject(mesh, defaultMaterial)->GetTransform();
-	//t.SetPosition(Vector3(-5, 0, -4));
+	t = CreateObject(mesh, defaultMaterial)->GetTransform();
+	t.SetPosition(Vector3(-5, 0, -4));
 	
-	//auto& t = objects[0]->GetTransform();
-	//t.SetPosition(Vector3(0, 0.5f, 0));
-	
-	/*Vector3 vertices[] = {
-		Vector3(0.5f,0,0),
-		Vector3(-0.5f, 0,0),
-		Vector3(0,0.5f,0),
-		Vector3(-0.5f, 0,0),
-		Vector3(0.5f,0,0),
-		Vector3(0,-0.5f,0),
-	};
-	MeshData data2;
-	const int vertCount = 6;
-	data2.AllocateMeshData(vertCount, 0);
-	data2.SetPositions(vertices, vertCount);
-	data2.SetColours(colours, vertCount);
-	Mesh* mesh2 = Mesh::InitNew(data2);
-	objects.push_back(new Object(mesh2, defaultMaterial));*/
-
 }
 
 void Program::InitGraphics()
 {
-	if (!glfwInit())
-	{
-		throw "GLFW failed to initiate.";
-		return;
-	}
-
-	window = glfwCreateWindow(1280, 720, "yo", nullptr, nullptr);
-	if (!window)
-	{
-		glfwTerminate();
-		throw "GLFW failed to create window.";
-		return;
-	}
-
-	glfwMakeContextCurrent(window);
-
-	if (!gladLoadGL())
-	{
-		throw "GLAD failed to load.";
-		return;
-	}
-
-	//cap fps to framerate
-	glfwSwapInterval(1);
-
-	//glEnable(GL_DEBUG_OUTPUT);
-	//glDebugMessageCallback(OpenGLDebugCallback, 0); //callback has never actually called, should probably use glfwSetErrorCallback or something idk
-	glEnable(GL_DEPTH_TEST);
-	glClearColor(0.09f, 0.1f, 0.1f, 1.0f);
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	renderer.Init();
 }
 
 void Program::InitCallbacks()
 {
+	GLFWwindow* window = renderer.GetWindow();
+
 	glfwSetWindowSizeCallback(window, OnWindowResize);
 	glfwSetMouseButtonCallback(window, OnMouseButton);
 	glfwSetScrollCallback(window, OnMouseWheel);
@@ -153,48 +78,27 @@ void Program::InitCallbacks()
 
 void Program::Loop()
 {
-	while (!glfwWindowShouldClose(window))
+	while (!glfwWindowShouldClose(renderer.GetWindow()))
 	{
 		UpdateTime();
 		Render();
 		glfwPollEvents();
 		Update();
+		UpdateInput();
 	}
 }
 
 void Program::Render()
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	camera->UpdateCamera();
-	glUniformMatrix4fv(materials[0]->GetUniformID("ViewProjectionMatrix"), 1, GL_FALSE, (GLfloat*)&(camera->GetViewProjectionMatrix()[0]));
-	
-	size_t size = objects.size();
-	for (size_t i = 0; i < size; i++)
-	{
-		objects[i]->Render();
-	} 
-
-	glfwSwapBuffers(window);
+	renderer.Render(objects.data(), objects.size());
 }
 
 void Program::UpdateInput()
 {
-
-}
-
-void Program::Update()
-{
-	size_t size = objects.size();
-	Quaternion rotation = glm::angleAxis(glm::radians(200.0f) * (float)deltaTime, glm::normalize(Vector3(1, 1, 1)));
-	for (size_t i = 0; i < size; i++)
-	{
-		//objects[i]->GetTransform().Rotate(rotation);
-	}
-
-
 	Vector3 cameraDir = Vector3();
-	Transform& t = camera->GetTransform();
+	Transform& t = renderer.GetMainCamera()->GetTransform();
+
+	GLFWwindow* window = GetWindow();
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
 		cameraDir -= t.GetForward();
@@ -224,53 +128,30 @@ void Program::Update()
 	t.Move(cameraDir * ((float)deltaTime * 2.0f));
 }
 
+void Program::Update()
+{
+	size_t size = objects.size();
+	Quaternion rotation = glm::angleAxis(glm::radians(200.0f) * (float)deltaTime, glm::normalize(Vector3(1, 1, 1)));
+	for (size_t i = 0; i < size; i++)
+	{
+		objects[i]->GetTransform().Rotate(rotation);
+	}
+}
+
 void Program::Cleanup()
 {
 	for (size_t i = 0; i < objects.size(); i++)
 	{
 		delete objects[i];
 	}
-	materials.clear();
+	objects.clear();
 
-	for (size_t i = 0; i < meshes.size(); i++)
-	{
-		delete meshes[i];
-	}
-	meshes.clear();
-
-	for (size_t i = 0; i < materials.size(); i++)
-	{
-		delete materials[i];
-	}
-	materials.clear();
-
-	for (size_t i = 0; i < shaders.size(); i++)
-	{
-		delete shaders[i];
-	}
-	shaders.clear();
-
-	glfwTerminate();
+	renderer.Cleanup();
 }
 
 void Program::RecompileShaders()
 {
-	size_t size = shaders.size();
-	for (size_t i = 0; i < size; i++)
-	{
-		if (shaders[i]->ShouldRecompile())
-		{
-			shaders[i]->Recompile();
-
-			for (size_t i = 0; i < materials.size(); i++)
-			{
-				if (materials[i]->UsesShader(shaders[i]))
-				{
-					materials[i]->ReloadMaterial();
-				}
-			}
-		}
-	}
+	renderer.RecompileShaders();
 }
 
 void Program::UpdateTime()
@@ -300,7 +181,7 @@ void Program::KeyReleased(int key)
 
 void Program::MousePressed(int button)
 {
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(GetWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 }
 
@@ -310,7 +191,7 @@ void Program::MouseReleased(int button)
 
 void Program::MouseMove(Vector2 delta)
 {
-	auto& t = camera->GetTransform();
+	auto& t = renderer.GetMainCamera()->GetTransform();
 
 	static Vector2 rotation = Vector2();
 	rotation += delta * -0.0007f;
@@ -401,14 +282,6 @@ void Program::OnKey(GLFWwindow* window, int key, int scancode, int action, int m
 			instance->KeyReleased(key);
 		}
 	}
-}
-
-//https://www.khronos.org/opengl/wiki/Example/OpenGL_Error_Testing_with_Message_Callbacks
-void Program::OpenGLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
-{
-	printf("GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-		(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
-		type, severity, message);
 }
 
 #pragma endregion

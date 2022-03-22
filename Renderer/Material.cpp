@@ -53,6 +53,12 @@ void Material::Use() const
 	{
 		glUseProgram(programID);
 		currentMaterial = materialID;
+
+		for (auto& tex : textures)
+		{
+			glActiveTexture(GL_TEXTURE0 + tex.attachedUnit);
+			glBindTexture(GL_TEXTURE_2D, tex.texture->GetID());
+		}
 	}
 }
 
@@ -60,9 +66,6 @@ void Material::ClearMaterial()
 {
 	glUseProgram(0);
 	currentMaterial = -1;
-	
-	//glActiveTexture(0);
-	//glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 GLuint Material::GetUniformID(const char* name) const
@@ -192,6 +195,11 @@ void Material::SetUniform(const char* name, const Matrix4x4& value, GLboolean tr
 	SetUniform(glGetUniformLocation(programID, name), value, transpose);
 }
 
+void Material::SetTextureSampler(const char* name, Texture2D* texture)
+{
+	SetTextureSampler(glGetUniformLocation(programID, name), texture);
+}
+
 void Material::SetUniform(int id, int value) const
 {
 	Use();
@@ -232,6 +240,39 @@ void Material::SetUniform(int id, const Matrix4x4& value, GLboolean transpose) c
 {
 	Use();
 	glUniformMatrix4fv(id, 1, transpose, (GLfloat*)&(value[0]));
+}
+
+void Material::SetTextureSampler(GLuint id, Texture2D* texture)
+{
+	Use();
+
+	//If this sampler has been set before, change texture to this texture but don't change the id
+	for (size_t i = 0; i < textures.size(); i++)
+	{
+		if (textures[i].samplerID == id)
+		{
+			textures[i].texture = texture;
+			return;
+		}
+	}
+
+	//Otherwise get the smallest unchosen textureunit and set this unit to it
+	GLuint smallestUnchosenUnit = 0;
+	for (size_t i = 0; i < textures.size(); i++)
+	{
+		if (textures[i].attachedUnit == smallestUnchosenUnit)
+		{
+			smallestUnchosenUnit++;
+			i = 0;
+		}
+	}
+
+	TextureData data;
+	data.attachedUnit = smallestUnchosenUnit;
+	data.texture = texture;
+	data.samplerID = id;
+	glUniform1i(id, data.attachedUnit);
+	textures.push_back(data);
 }
 #pragma endregion
 

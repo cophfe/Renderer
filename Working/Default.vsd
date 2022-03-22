@@ -4,31 +4,36 @@ layout (location = 1) in vec3 normal;
 layout (location = 2) in vec4 colour;
 layout (location = 3) in vec2 texCoord;
 
-layout (std140) uniform Matrices
+layout (std140) uniform CameraData
 {
+    mat4 ViewProjectionMatrix;
     mat4 ProjectionMatrix;
     mat4 ViewMatrix;
 };
+
 layout (std140) uniform Timing
 {
     float Time;
 	float DeltaTime;
 };
+
 layout (std140) uniform Lighting
 {
     vec4 LightColour[8];
 	vec3 LightPosition[8];
 	vec4 AmbientColour;
-	
 };
 
-out vec4 vertexColour; 
+uniform mat4 MVPMatrix;
+uniform mat4 ModelMatrix;
 
-uniform mat4 ObjectToWorldMatrix;
-uniform mat4 ViewProjectionMatrix;
+out vec3 vertexColour; 
+//out vec3 worldNormal;
 
 void main()
 {
-    gl_Position = ViewProjectionMatrix * ObjectToWorldMatrix * vec4(position, 1.0);
-	vertexColour = vec4(normal  + 0.5, 1);
+    gl_Position = MVPMatrix * vec4(position, 1.0);
+    //worldNormal = (ModelMatrix * vec4(normal, 0.0)).xyz;
+
+	vertexColour = normal  + 0.5;
 }

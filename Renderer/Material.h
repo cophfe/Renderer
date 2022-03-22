@@ -2,6 +2,7 @@
 #include "Math.h"
 #include "Graphics.h"
 #include "Shader.h"
+#include "Texture.h"
 
 //this is a unity-esque material class
 //Material will basically be wrappers for shader programs
@@ -54,6 +55,8 @@ public:
 	void SetUniform(int id, const Matrix3x3& value, GLboolean transpose = GL_FALSE) const;
 	void SetUniform(int id, const Matrix4x4& value, GLboolean transpose = GL_FALSE) const;
 #pragma endregion
+	void SetTextureSampler(const char* name, Texture2D* texture);
+	void SetTextureSampler(GLuint id, Texture2D* texture);
 
 	inline bool IsLoaded() { return loaded; }
 	inline GLuint GetProgramID() { return programID; }
@@ -74,6 +77,14 @@ private:
 
 	GLuint programID;
 	bool loaded;
+
+	struct TextureData
+	{
+		Texture2D* texture;
+		GLuint attachedUnit;
+		GLuint samplerID; //used to remove textureDatas when not needed
+	};
+	std::vector<TextureData> textures;
 
 	Shader* vertex;
 	Shader* fragment;

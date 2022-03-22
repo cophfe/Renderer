@@ -6,6 +6,8 @@
 #include "Mesh.h"
 #include "Object.h"
 #include "Camera.h"
+#include "UniformBuffer.h"
+#include "Renderer.h"
 
 class Program
 {
@@ -13,13 +15,12 @@ public:
 	static Program* CreateInstance();
 	static void DestroyInstance();
 	inline static Program* GetInstance() { return instance; }
-
 	void Run();
+
+	inline GLFWwindow* GetWindow() { return renderer.GetWindow(); }
+	inline Renderer& GetRenderer() { return renderer; }
 	inline float GetDeltaTime() { return deltaTime; }
 	inline double GetDeltaTimeDouble() { return deltaTime; }
-	Material* CreateMaterial(Shader* vertex, Shader* fragment);
-	Shader* CreateShader(const char* path, Shader::Type type);
-	Mesh* CreateMesh(MeshData& data, bool isStatic = true, bool storeMeshOnCPU = false);
 	Object* CreateObject(Mesh* mesh, Material* material);
 
 private:
@@ -57,21 +58,12 @@ private:
 	void WindowResize(Vector2Int size);
 #pragma endregion
 
-
-	static void OpenGLDebugCallback(GLenum source,
-		GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
-
-	GLFWwindow* window;
-
-	std::vector<Shader*> shaders;
-	std::vector<Material*> materials;
-	std::vector<Mesh*> meshes;
+	Renderer renderer;
 	std::vector<Object*> objects;
-	Camera* camera;
 
 	double deltaTime;
 	double lastTime;
-	//to be implemented once I get a timer system
+
 	const float shaderRecompileTime = 1;
 	float shaderRecompileTimer;
 	Vector2 lastMousePosition;

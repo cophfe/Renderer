@@ -1,4 +1,5 @@
 #include "Object.h"
+#include "Program.h"
 
 void Object::Render()
 {
@@ -13,5 +14,7 @@ void Object::Render()
 void Object::UpdateUniform()
 {
 	transform.UpdateMatrix();
-	material->SetUniform("ObjectToWorldMatrix", transform.GetMatrix());
+
+	Camera* cam = Program::GetInstance()->GetRenderer().GetMainCamera();
+	material->SetUniform("MVPMatrix", cam->GetViewProjectionMatrix() * transform.GetMatrix());
 }
