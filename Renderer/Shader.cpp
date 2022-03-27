@@ -26,7 +26,7 @@ Shader* Shader::InitNew(const char* path, Type type)
 	return shader;
 }
 
-void Shader::Compile(bool recompile) //based on simpleframework
+bool Shader::Compile(bool recompile) //based on simpleframework
 {
 	std::string shader = LoadFileAsString(path).c_str();
 	const char* cStr = shader.c_str();
@@ -46,12 +46,16 @@ void Shader::Compile(bool recompile) //based on simpleframework
 			loaded = false;
 			auto msg = "Failed to compile shader " + std::string(path) + ":\n" + log;
 			throw std::runtime_error(msg);
+			return false;
 		}
 		else
 		{
 			std::cout << "Failed to recompile shader " + std::string(path) + ":\n" + log << std::endl;
+			return false;
 		}
 	}
+
+	return true;
 }
 
 bool Shader::ShouldRecompile()
@@ -63,9 +67,9 @@ bool Shader::ShouldRecompile()
 	return rcmp;
 }
 
-void Shader::Recompile()
+bool Shader::Recompile()
 {
-	Compile(true);
+	return Compile(true);
 }
 
 std::string Shader::LoadFileAsString(std::string path)

@@ -8,6 +8,7 @@
 #include "Camera.h"
 #include "UniformBuffer.h"
 #include "Renderer.h"
+#include "MeshBuilder.h"
 
 class Program
 {
@@ -35,10 +36,8 @@ private:
 	void InitCallbacks();
 	void Loop();
 	void Render();
-	void UpdateInput();
 	void Update();
 	void Cleanup();
-	void RecompileShaders();
 	void UpdateTime();
 
 #pragma region Callbacks

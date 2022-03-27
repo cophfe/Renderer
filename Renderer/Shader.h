@@ -23,7 +23,7 @@ public:
 	static Shader* InitNew(const char* path, Type type);
 
 	bool ShouldRecompile();
-	void Recompile();
+	bool Recompile();
 	inline GLuint GetId() const { return id; }
 	inline const std::string& GetFilePath() const { return path; }
 	inline bool IsLoaded() const { return loaded; }
@@ -39,7 +39,7 @@ public:
 	Shader& operator= (const Shader& other) = delete;
 
 private:
-	void Compile(bool recompile);
+	bool Compile(bool recompile);
 
 	std::filesystem::file_time_type lastTime;
 

@@ -82,7 +82,7 @@ private:
 	{
 		Texture2D* texture;
 		GLuint attachedUnit;
-		GLuint samplerID; //used to remove textureDatas when not needed
+		GLuint samplerID;
 	};
 	std::vector<TextureData> textures;
 

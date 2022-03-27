@@ -8,15 +8,20 @@
 class Object 
 {
 public:
-	Object(Mesh* mesh, Material* material) : mesh(mesh), material(material), transform(Transform()) {}
+	Object(Mesh* mesh, Material* material) : mesh(mesh), material(material), transform(Transform()) { UpdateUniformIDs(); }
 
 	void Render();
 	inline Transform& GetTransform() { return transform; };
 private:
+	void UpdateUniformIDs();
+
 	void UpdateUniform();
 
 	Transform transform;
 	Mesh* mesh;
 	Material* material;
+
+	GLuint MVPMatrix;
+	GLuint ModelMatrix;
 };
 

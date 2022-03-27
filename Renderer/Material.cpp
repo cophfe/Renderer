@@ -54,6 +54,7 @@ void Material::Use() const
 		glUseProgram(programID);
 		currentMaterial = materialID;
 
+		//Set textures
 		for (auto& tex : textures)
 		{
 			glActiveTexture(GL_TEXTURE0 + tex.attachedUnit);
@@ -147,7 +148,7 @@ Vector4&& Material::GetVector4(int id) const
 Matrix3x3&& Material::GetMatrix3(int id) const
 {
 	Matrix3x3 value;
-	glGetnUniformfv(programID, id, 9, (GLfloat*)&value[0]); //these values are probably organised incorrectly, if they even come out at all
+	glGetnUniformfv(programID, id, 9, (GLfloat*)&value[0]); //these values are probably organised incorrectly
 	return std::move(value);
 }
 
@@ -256,7 +257,7 @@ void Material::SetTextureSampler(GLuint id, Texture2D* texture)
 		}
 	}
 
-	//Otherwise get the smallest unchosen textureunit and set this unit to it
+	//Otherwise get the smallest unchosen textureunit and set this unit to it (this is recursive, kinda yikes)
 	GLuint smallestUnchosenUnit = 0;
 	for (size_t i = 0; i < textures.size(); i++)
 	{
@@ -287,7 +288,7 @@ void Material::ReloadMaterial()
 
 	if (success == GL_FALSE)
 	{
-		auto msg = "Failed to reload material using vertex: " + std::string(vertex->GetFilePath()) + "and fragment: " + std::string(fragment->GetFilePath()) + "\n";
+		auto msg = "Failed to reload material using vertex: " + std::string(vertex->GetFilePath()) + " and fragment: " + std::string(fragment->GetFilePath()) + "\n";
 		std::cout << msg;
 	}
 }

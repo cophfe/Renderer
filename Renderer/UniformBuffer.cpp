@@ -3,7 +3,7 @@
 GLuint UniformBuffer::blockBindingTotalCount = 0;
 GLuint UniformBuffer::currentUniformBuffer = -1;
 
-void UniformBuffer::Init(int bufferSize, bool dynamic, GLuint explicitBinding)
+void UniformBuffer::Init(int bufferSize, bool dynamic, GLint explicitBinding)
 {
 	if (created)
 	{
@@ -13,7 +13,7 @@ void UniformBuffer::Init(int bufferSize, bool dynamic, GLuint explicitBinding)
 	glGenBuffers(1, &id);
 	glBindBuffer(GL_UNIFORM_BUFFER, id);
 
-	GLenum type = dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
+	GLenum type = dynamic ? GL_STREAM_DRAW : GL_STATIC_DRAW; //GL_STREAM_DRAW because it probbbbably will get changed a lot
 	glBufferData(GL_UNIFORM_BUFFER, bufferSize, nullptr, type);
 
 	//Note that in the future I can use glBindBufferRange and have a single large uniform buffer containing everything, accessed as if it was multiple uniform buffers

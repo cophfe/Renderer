@@ -21,9 +21,9 @@ public:
 	inline const Vector3& GetScale() const { return scale; }
 	inline const Matrix4x4& GetMatrix() const { return matrix; }
 	
-	inline void Rotate(const Quaternion& rot) { rotation = rot * rotation; }
-	inline void Rotate(float rotation, const Vector3& axis) { this->rotation = glm::angleAxis(rotation, axis) * this->rotation; }
-	inline void Move(const Vector3& move) { position += move; }
+	inline void Rotate(const Quaternion& rot) { rotation = rot * rotation; UpdateMatrix(); }
+	inline void Rotate(float rotation, const Vector3& axis) { this->rotation = glm::angleAxis(rotation, axis) * this->rotation; UpdateMatrix(); }
+	inline void Move(const Vector3& move) { position += move; UpdateMatrix(); }
 	
 private:
 	Matrix4x4 matrix;

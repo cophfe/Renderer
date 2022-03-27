@@ -41,7 +41,11 @@ Mesh* Mesh::Init(MeshData& data, bool isStatic, bool storeMeshOnCPU)
 	glEnableVertexAttribArray(0);
 	uint16_t offset = verticesCount * sizeof(MeshData::Position);
 	//Normal
+#ifdef NormalIsVector3
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(MeshData::Normal), (void*)offset);
+#else
 	glVertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(MeshData::Normal), (void*)offset);
+#endif
 	glEnableVertexAttribArray(1);
 	offset += verticesCount * sizeof(MeshData::Normal);
 	//Colour
@@ -49,7 +53,7 @@ Mesh* Mesh::Init(MeshData& data, bool isStatic, bool storeMeshOnCPU)
 	glEnableVertexAttribArray(2);
 	offset += verticesCount * sizeof(MeshData::Colour);
 	//TexCoord
-	glVertexAttribPointer(3, 2, GL_SHORT, GL_TRUE, sizeof(MeshData::TexCoord), (void*)offset);
+	glVertexAttribPointer(3, 2, GL_UNSIGNED_SHORT, GL_TRUE, sizeof(MeshData::TexCoord), (void*)offset);
 	glEnableVertexAttribArray(3);
 	
 	//Now set up element buffer

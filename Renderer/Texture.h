@@ -38,11 +38,10 @@ class Texture2D
 {
 public:
 	Texture2D() { loaded = false; }
-	Texture2D* Init(const char* path, TextureFormat format = TextureFormat::Auto,
-		unsigned int mipMapCount = 1, TextureFiltering textureFiltering = TextureFiltering::Linear,
+	Texture2D* Init(const char* path, unsigned int mipMapCount = 0, TextureFiltering textureFiltering = TextureFiltering::Linear,
 		TextureMipMapFiltering mipMapFiltering = TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode wrapMode = TextureWrapMode::Wrap);
-	static Texture2D* InitNew(const char* path, TextureFormat format = TextureFormat::Auto,
-		unsigned int mipMapCount = 1, TextureFiltering textureFiltering = TextureFiltering::Linear,
+
+	static Texture2D* InitNew(const char* path,	unsigned int mipMapCount = 0, TextureFiltering textureFiltering = TextureFiltering::Linear,
 		TextureMipMapFiltering mipMapFiltering = TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode wrapMode = TextureWrapMode::Wrap);
 
 	void SetWrapMode(TextureWrapMode wrapMode);
@@ -57,7 +56,7 @@ public:
 	Texture2D(const Texture2D& other) = delete;
 	Texture2D& operator= (const Texture2D& other) = delete;
 private:
-	
+	void DebugDraw(unsigned char* data);
 
 	GLuint id;
 	Vector2Int size;

@@ -5,7 +5,7 @@
 class UniformBuffer
 {
 public:
-	void Init(int bufferSize, bool dynamic = true, GLuint explicitBinding = -1);
+	void Init(int bufferSize, bool dynamic = true, GLint explicitBinding = -1);
 	void Use() const;
 	void BindToMaterial(GLuint shaderID, const char* uniformBlockName) const;
 	void BindToMaterial(GLuint shaderID, GLuint uniformBlockIndex) const;

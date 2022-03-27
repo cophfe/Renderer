@@ -42,9 +42,12 @@ void Program::Init()
 	lastTime = glfwGetTime();
 	shaderRecompileTimer = shaderRecompileTime;
 
-	Shader* fragment = renderer.CreateShader("Default.fsd", Shader::Type::Fragment);
-	Shader* vertex = renderer.CreateShader("Default.vsd", Shader::Type::Vertex);
+	auto& tM = renderer.GetTextureManager();
+
+	Shader* fragment = renderer.CreateShader("Default.frag", Shader::Type::Fragment);
+	Shader* vertex = renderer.CreateShader("Default.vert", Shader::Type::Vertex);
 	Material* defaultMaterial = renderer.CreateMaterial(vertex, fragment);
+	defaultMaterial->SetTextureSampler("_MainTex", tM.LoadTexture("Planet.jpg"));
 
 	MeshData data;
 	MeshPrimitive::SetCube(data);
@@ -52,16 +55,44 @@ void Program::Init()
 
 	Mesh* mesh = renderer.CreateMesh(data);
 	auto& t = CreateObject(mesh, defaultMaterial)->GetTransform();
-	t.SetPosition(Vector3(0, 0, -1));
+	t.SetPosition(Vector3(0, 0, 0));
 	
-	t = CreateObject(mesh, defaultMaterial)->GetTransform();
+	for (size_t i = 1; i < 30; i++)
+	{
+		CreateObject(mesh, defaultMaterial)->GetTransform().SetPosition(Vector3(0, 0, -(1.5 * i)));
+
+	}
+	//other object
+	Material* otherMaterial = renderer.CreateMaterial(vertex, fragment);
+	otherMaterial->SetTextureSampler("_MainTex", tM.LoadTexture("Gradient.png"));
+	t = CreateObject(mesh, otherMaterial)->GetTransform();
 	t.SetPosition(Vector3(-5, 0, -4));
-	
+
+	int meshCount;
+	MeshData* datas = MeshBuilder::LoadMeshData(meshCount, "monkey.obj");
+
+	for (size_t i = 0; i < meshCount; i++)
+	{
+		mesh = renderer.CreateMesh(datas[i]);
+		t = CreateObject(mesh, otherMaterial)->GetTransform();
+		t.SetPosition(Vector3(-5, 2 * i, -4));
+	}
+
+	MeshBuilder::FreeMeshArray(datas, meshCount);
+
+	//TEMP - SET MATERIAL INFORMATION
+	auto& materials = renderer.GetMaterials();
+	for (size_t i = 0; i < materials.size(); i++)
+	{
+		materials[i]->SetUniform("_Material.shininess", 32.0f);
+		materials[i]->SetUniform("_Material.specularity", 0.6f);
+	}
+	//
 }
 
 void Program::InitGraphics()
 {
-	renderer.Init();
+	renderer.Init("");
 }
 
 void Program::InitCallbacks()
@@ -84,57 +115,62 @@ void Program::Loop()
 		Render();
 		glfwPollEvents();
 		Update();
-		UpdateInput();
+
+		Vector3 cameraDir = Vector3();
+		Transform& t = renderer.GetMainCamera()->GetTransform();
+
+		GLFWwindow* window = GetWindow();
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		{
+			cameraDir -= t.GetForward();
+		}
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		{
+			cameraDir += t.GetForward();
+		}
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		{
+			cameraDir -= t.GetRight();
+		}
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		{
+			cameraDir += t.GetRight();
+		}
+		if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+		{
+			cameraDir -= t.GetUp();
+		}
+		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+		{
+			cameraDir += t.GetUp();
+		}
+		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
+			cameraDir *= 2;
+		t.Move(cameraDir * ((float)deltaTime * 2.0f));
 	}
 }
 
 void Program::Render()
 {
+	renderer.UpdateUniformBuffers();
 	renderer.Render(objects.data(), objects.size());
-}
-
-void Program::UpdateInput()
-{
-	Vector3 cameraDir = Vector3();
-	Transform& t = renderer.GetMainCamera()->GetTransform();
-
-	GLFWwindow* window = GetWindow();
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-	{
-		cameraDir -= t.GetForward();
-	}
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-	{
-		cameraDir += t.GetForward();
-	}
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-	{
-		cameraDir -= t.GetRight();
-	}
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-	{
-		cameraDir += t.GetRight();
-	}
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-	{
-		cameraDir -= t.GetUp();
-	}
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-	{
-		cameraDir += t.GetUp();
-	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
-		cameraDir *= 2;
-	t.Move(cameraDir * ((float)deltaTime * 2.0f));
 }
 
 void Program::Update()
 {
+	return;
+
 	size_t size = objects.size();
-	Quaternion rotation = glm::angleAxis(glm::radians(200.0f) * (float)deltaTime, glm::normalize(Vector3(1, 1, 1)));
+	float offset = (2.0f * glm::pi<float>()) / size;
+
 	for (size_t i = 0; i < size; i++)
 	{
-		objects[i]->GetTransform().Rotate(rotation);
+		float t = 0.3f * glfwGetTime();
+		Vector3 pos = 5.0f * Vector3(sinf(i * offset + t), 0, cosf(i * offset + t));
+		objects[i]->GetTransform().SetPosition(pos);
+
+		auto lookat = glm::normalize(glm::quatLookAt(-objects[i]->GetTransform().GetPosition(), Vector3(0, 1, 0)));
+		objects[i]->GetTransform().SetRotation(lookat);
 	}
 }
 
@@ -149,11 +185,6 @@ void Program::Cleanup()
 	renderer.Cleanup();
 }
 
-void Program::RecompileShaders()
-{
-	renderer.RecompileShaders();
-}
-
 void Program::UpdateTime()
 {
 	double newTime = glfwGetTime();
@@ -163,7 +194,7 @@ void Program::UpdateTime()
 	shaderRecompileTimer -= deltaTime;
 	if (shaderRecompileTimer < 0)
 	{
-		RecompileShaders();
+		renderer.RecompileShaders();
 		shaderRecompileTimer = shaderRecompileTime;
 	}
 }

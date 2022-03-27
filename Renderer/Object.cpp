@@ -11,10 +11,16 @@ void Object::Render()
 	}
 }
 
+void Object::UpdateUniformIDs()
+{
+	MVPMatrix = material->GetUniformID("_MVPMatrix");
+	ModelMatrix = material->GetUniformID("_ModelMatrix");
+}
+
 void Object::UpdateUniform()
 {
-	transform.UpdateMatrix();
-
 	Camera* cam = Program::GetInstance()->GetRenderer().GetMainCamera();
-	material->SetUniform("MVPMatrix", cam->GetViewProjectionMatrix() * transform.GetMatrix());
+
+	material->SetUniform(MVPMatrix, cam->GetViewProjectionMatrix() * transform.GetMatrix());
+	material->SetUniform(ModelMatrix, transform.GetMatrix());
 }

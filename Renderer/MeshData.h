@@ -2,11 +2,20 @@
 #include "Math.h"
 #include "Graphics.h"
 
+//Made this define because for some goddamn reason using a normal stored as GL_INT_2_10_10_10_REV in the fragment shader means I can't sample a texture (even if the thing the normal is doing never actually contributes to anything). 
+//temporarily have vector3 stuff until it is figured out
+#define NormalIsVector3 
+
 //used to create a mesh
 struct MeshData
 {
 	typedef glm::vec<3, float> Position;
+#ifdef NormalIsVector3
+	typedef Vector3 Normal; // uint32_t
+#else
 	typedef uint32_t Normal;
+#endif // NormalIsVector3
+
 	struct Colour 
 	{
 		Colour(GLubyte r, GLubyte g, GLubyte b, GLubyte a) : r(r), g(g), b(b), a(a) {}
@@ -16,9 +25,9 @@ struct MeshData
 
 	struct TexCoord 
 	{
-		TexCoord(GLshort x, GLshort y) : x(x), y(y) {}
+		TexCoord(GLushort x, GLushort y) : x(x), y(y) {}
 
-		GLshort x, y;
+		GLushort x, y;
 	};
 
 	typedef unsigned int Index;
@@ -37,21 +46,25 @@ struct MeshData
 
 	MeshData* AllocateMeshData(Size vertexCount, Size indexCount);
 
-	void SetPositions(Position* positions, Size count);
-	void SetNormals(Normal* normals, Size count);
-	void SetNormals(Vector3* normals, Size count);
-	void SetColours(Colour* colours, Size count);
-	void SetColours(Vector4* colours, Size count);
-	void SetTexCoords(TexCoord* coords, Size count);
-	void SetTexCoords(Vector2* coords, Size count);
-	void SetIndices(Index* indices, Size count);
-	void SetVerticesData(VertexData* vertices, Size count);
+	void SetPositions(const Position* positions, Size count);
+	void SetNormals(const Normal* normals, Size count);
+#ifndef NormalIsVector3
+	void SetNormals(const Vector3* normals, Size count);
+#endif
+	void SetColours(const Colour* colours, Size count);
+	void SetColours(const Vector4* colours, Size count);
+	void SetTexCoords(const TexCoord* coords, Size count);
+	void SetTexCoords(const Vector2* coords, Size count);
+	void SetIndices(const Index* indices, Size count);
+	void SetVerticesData(const VertexData* vertices, Size count);
 	
 	void CalculateNormals(bool clockwise);
 
+#ifndef NormalIsVector3
 	static Normal PackNormal(const Vector3& normal);
+#endif
 	static Colour PackColour(const Vector4& colour);
-	static TexCoord PackTexCoord(const Vector2 texcoord);
+	static TexCoord PackTexCoord(const Vector2& texcoord);
 
 	//https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
 	//https://anteru.net/blog/2016/storing-vertex-data-to-interleave-or-not-to-interleave/

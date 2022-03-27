@@ -1,7 +1,7 @@
 #include "Renderer.h"
 #include "Program.h"
 
-void Renderer::Init()
+void Renderer::Init(const char* texturePath)
 {
 	if (!glfwInit())
 	{
@@ -41,6 +41,13 @@ void Renderer::Init()
 	Vector2Int size;
 	glfwGetWindowSize(window, &size.x, &size.y);
 	mainCamera = new Camera(glm::radians(65.0f), size.x / (float)size.y, 0.001, 100);
+
+	textureManager.Init(texturePath, 0, TextureFiltering::Linear, TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode::Wrap);
+
+	//init uniform buffers
+	cameraBuffer.Init(sizeof(CameraBufferStruct), true, 0);
+	timingBuffer.Init(sizeof(TimingBufferStruct), true, 1);
+	lightingBuffer.Init(sizeof(LightingBufferStruct), true, 2);
 }
 
 void Renderer::Cleanup()
@@ -63,6 +70,7 @@ void Renderer::Cleanup()
 	}
 	shaders.clear();
 
+	textureManager.Unload();
 	glfwTerminate();
 }
 
@@ -75,6 +83,7 @@ void Renderer::RecompileShaders()
 		{
 			shaders[i]->Recompile();
 
+			//note: small but actually extremely major issue: shader uniforms get reset on recompile
 			for (size_t i = 0; i < materials.size(); i++)
 			{
 				if (materials[i]->UsesShader(shaders[i]))
@@ -84,6 +93,43 @@ void Renderer::RecompileShaders()
 			}
 		}
 	}
+}
+
+void Renderer::UpdateUniformBuffers()
+{
+	CameraBufferStruct cameraData;
+	cameraData.ProjectionMatrix = mainCamera->GetProjectionMatrix();
+	cameraData.ViewMatrix = mainCamera->GetViewMatrix();
+	cameraData.ViewProjectionMatrix = mainCamera->GetViewProjectionMatrix();
+	cameraData.InverseViewMatrix = glm::inverse(mainCamera->GetViewMatrix());
+	cameraData.cameraPosition = Vector4(mainCamera->GetTransform().GetPosition(), 1.0f);
+	cameraBuffer.BufferSubData(0, sizeof(cameraData), &cameraData);
+
+	TimingBufferStruct time;
+	time.Time = glfwGetTime();
+	time.DeltaTime = Program::GetInstance()->GetDeltaTime();
+	timingBuffer.BufferSubData(0, sizeof(time), &time);
+
+	LightingBufferStruct lighting;
+	lighting.ambientColour = ambientColour;
+
+	//TEMP- SET FIRST LIGHTING THING TO A CAMERA LIGHT
+	LightDataStruct light;
+	light.position = mainCamera->GetTransform().GetPosition();
+	light.direction = mainCamera->GetTransform().GetForward();
+	light.luminance = Vector3(0.8f, 0.8f, 1.0f);
+	light.constant = 2;
+	light.linear = 0.2f;
+	light.quadratic = 0.07f;
+	light.minAngle = glm::cos(glm::radians(30.0f));
+	light.maxAngle = glm::cos(glm::radians(40.0f));
+	light.type = 2;
+	lighting.lights[0] = light;
+	
+	memset(lighting.lights + 1, 0, sizeof(LightDataStruct) * 7);
+	//std::cout << "x: " << light.direction.x << ", y: " << light.direction.y << ", z: " << light.direction.z << std::endl;
+	//
+	lightingBuffer.BufferSubData(0, sizeof(lighting), &lighting);
 }
 
 void Renderer::Render(Object** objects, size_t count)
@@ -121,3 +167,4 @@ Mesh* Renderer::CreateMesh(MeshData& data, bool isStatic, bool storeMeshOnCPU)
 	meshes.push_back(mesh);
 	return mesh;
 }
+
