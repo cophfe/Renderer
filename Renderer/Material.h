@@ -65,6 +65,8 @@ public:
 	inline bool UsesShader(Shader* shader) { return shader == fragment || shader == vertex; }
 	void ReloadMaterial();
 
+	Material* Clone();
+
 	Material(Material&& other) noexcept;
 	Material& operator= (Material&& other) noexcept;
 	~Material();

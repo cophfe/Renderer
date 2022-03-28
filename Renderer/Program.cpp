@@ -77,9 +77,19 @@ void Program::Init()
 		t = CreateObject(mesh, otherMaterial)->GetTransform();
 		t.SetPosition(Vector3(-5, 2 * i, -4));
 	}
-
 	MeshBuilder::FreeMeshArray(datas, meshCount);
 
+	datas = MeshBuilder::LoadMeshData(meshCount, "duck.obj");
+	for (size_t i = 0; i < meshCount; i++)
+	{
+		mesh = renderer.CreateMesh(datas[i]);
+		auto& transform = CreateObject(mesh, otherMaterial)->GetTransform();
+		transform.SetPosition(Vector3(-5, 6, -4));
+		transform.Rotate(90.0f, Vector3(1, 0, 0));
+		transform.SetScale(0.3f);
+	}
+	MeshBuilder::FreeMeshArray(datas, meshCount);
+	
 	//TEMP - SET MATERIAL INFORMATION
 	auto& materials = renderer.GetMaterials();
 	for (size_t i = 0; i < materials.size(); i++)
@@ -158,19 +168,14 @@ void Program::Render()
 
 void Program::Update()
 {
-	return;
 
 	size_t size = objects.size();
 	float offset = (2.0f * glm::pi<float>()) / size;
 
 	for (size_t i = 0; i < size; i++)
 	{
-		float t = 0.3f * glfwGetTime();
-		Vector3 pos = 5.0f * Vector3(sinf(i * offset + t), 0, cosf(i * offset + t));
-		objects[i]->GetTransform().SetPosition(pos);
-
-		auto lookat = glm::normalize(glm::quatLookAt(-objects[i]->GetTransform().GetPosition(), Vector3(0, 1, 0)));
-		objects[i]->GetTransform().SetRotation(lookat);
+		
+		objects[i]->GetTransform().Rotate(glm::radians(10.0f * deltaTime), Vector3(0,1,0));
 	}
 }
 

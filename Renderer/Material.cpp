@@ -293,6 +293,14 @@ void Material::ReloadMaterial()
 	}
 }
 
+Material* Material::Clone()
+{
+	//note: does not contain the same uniform values
+	Material* mat = new Material();
+	mat->Init(*vertex, *fragment);
+	return mat;
+}
+
 Material::Material(Material&& other) noexcept
 {
 	fragment = other.fragment;
@@ -300,6 +308,7 @@ Material::Material(Material&& other) noexcept
 	programID = other.programID;
 	loaded = other.loaded;
 	materialID = other.materialID;
+	textures = other.textures;
 
 	other.loaded = false;
 }
@@ -316,6 +325,7 @@ Material& Material::operator=(Material&& other) noexcept
 	programID = other.programID;
 	loaded = other.loaded;
 	materialID = other.materialID;
+	textures = other.textures;
 
 	other.loaded = false;
 	return *this;

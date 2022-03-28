@@ -131,7 +131,6 @@ void main()
         }
     }
 
-    //lightPower += _Lights[0].direction;
     Colour = vec4(lightPower, 1.0);
 } 
 

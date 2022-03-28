@@ -22,6 +22,11 @@ public:
 	Shader* CreateShader(const char* path, Shader::Type type);
 	Mesh* CreateMesh(MeshData& data, bool isStatic = true, bool storeMeshOnCPU = false);
 
+	//note: these should definitely check if the things are already in the array
+	inline Material* AddMaterial(Material* mat) { materials.push_back(mat); return mat; }
+	inline Shader* AddShader(Shader* shader) { shaders.push_back(shader); return shader; }
+	inline Mesh* AddMesh(Mesh* mesh) { meshes.push_back(mesh); return mesh; }
+
 	inline Camera* GetMainCamera() { return mainCamera; }
 	inline GLFWwindow* GetWindow() const { return window; }
 	inline TextureManager& GetTextureManager() { return textureManager; }

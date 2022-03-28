@@ -10,6 +10,7 @@ public:
 	void SetPosition(const Vector3& position);
 	void SetRotation(const Quaternion& rotation);
 	void SetScale(Vector3 scale);
+	void SetScale(float scale);
 	void UpdateMatrix();
 
 	Vector3&& GetForward() const;

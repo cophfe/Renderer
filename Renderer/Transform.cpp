@@ -26,6 +26,12 @@ void Transform::SetScale(Vector3 scale)
 	UpdateMatrix();
 }
 
+void Transform::SetScale(float scale)
+{
+	this->scale = Vector3(scale, scale, scale);
+	UpdateMatrix();
+}
+
 void Transform::UpdateMatrix()
 {
 	//ordered as translate, rotate, scale
