@@ -5,7 +5,13 @@ MeshData* MeshBuilder::LoadMeshData(int& meshCount, const char* path)
 {
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(path, 
-		aiProcessPreset_TargetRealtime_Fast); //should ONLY have triangles 
+		aiProcess_CalcTangentSpace |
+		aiProcess_GenNormals |
+		aiProcess_JoinIdenticalVertices |
+		aiProcess_Triangulate |
+		//aiProcess_GenUVCoords |
+		aiProcess_SortByPType 
+	); //should ONLY have triangles 
 	//currently generates tangents that aren't being used
 	
 	if (scene == nullptr) {
@@ -99,16 +105,15 @@ MeshData* MeshBuilder::LoadMesh(int& meshCount, const aiScene* scene)
 		if (mesh.HasNormals())
 		{
 			mD.SetNormals((Vector3*)mesh.mNormals, vCount);
-
 		}
 		if (mesh.HasTextureCoords(0))
 		{
 			//we only care about the first texCoord right now because that's all MeshData supports
-			//this is annoying
 			for (size_t j = 0; j  < vCount; j ++)
 			{
+				aiVector3D vec = mesh.mTextureCoords[0][j];
 				//this ignores the last component of the 3D texCoord, cuz we only use 2D texCoords
-				mD.texCoords[j] = MeshData::PackTexCoord(*(Vector2*)mesh.mTextureCoords[0]);
+				mD.texCoords[j] = MeshData::PackTexCoord(Vector2(vec.x, vec.y));
 			}
 			
 		}
@@ -117,7 +122,7 @@ MeshData* MeshBuilder::LoadMesh(int& meshCount, const aiScene* scene)
 			//once again have to loop through stuff
 			for (size_t j = 0; j < vCount; j++)
 			{
-				mD.colours[j] = MeshData::PackColour(*(Vector4*)mesh.mColors[0]);
+				mD.colours[j] = MeshData::PackColour(*(Vector4*)&(mesh.mColors[0][j]));
 			}
 		}
 

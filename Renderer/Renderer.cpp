@@ -102,7 +102,7 @@ void Renderer::UpdateUniformBuffers()
 	cameraData.ViewMatrix = mainCamera->GetViewMatrix();
 	cameraData.ViewProjectionMatrix = mainCamera->GetViewProjectionMatrix();
 	cameraData.InverseViewMatrix = glm::inverse(mainCamera->GetViewMatrix());
-	cameraData.cameraPosition = Vector4(mainCamera->GetTransform().GetPosition(), 1.0f);
+	cameraData.cameraPosition = Vector4(mainCamera->GetTransform().GetLocalPosition(), 1.0f);
 	cameraBuffer.BufferSubData(0, sizeof(cameraData), &cameraData);
 
 	TimingBufferStruct time;
@@ -115,8 +115,8 @@ void Renderer::UpdateUniformBuffers()
 
 	//TEMP- SET FIRST LIGHTING THING TO A CAMERA LIGHT
 	LightDataStruct light;
-	light.position = mainCamera->GetTransform().GetPosition();
-	light.direction = mainCamera->GetTransform().GetForward();
+	light.position = mainCamera->GetTransform().GetLocalPosition();
+	light.direction = mainCamera->GetTransform().GetLocalForward();
 	light.luminance = Vector3(0.8f, 0.8f, 1.0f);
 	light.constant = 2;
 	light.linear = 0.2f;

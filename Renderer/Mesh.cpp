@@ -37,7 +37,7 @@ Mesh* Mesh::Init(MeshData& data, bool isStatic, bool storeMeshOnCPU)
 	//setup vertex attributes
 	//vertex attributes are stored sequentially in the same buffer
 	//Position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(MeshData::Position), nullptr);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(MeshData::Position), (void*)0);
 	glEnableVertexAttribArray(0);
 	uint16_t offset = verticesCount * sizeof(MeshData::Position);
 	//Normal
@@ -74,7 +74,6 @@ Mesh* Mesh::Init(MeshData& data, bool isStatic, bool storeMeshOnCPU)
 		this->data = nullptr;
 
 	created = true;
-
 
 	return this;
 }

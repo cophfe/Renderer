@@ -1,13 +1,18 @@
 #include "MeshData.h"
+#include <stdexcept>
 
 MeshData* MeshData::AllocateMeshData(Size vertexCount, Size indexCount)
 {
-	uint32_t size = vertexCount * (3 * sizeof(Vector3) + sizeof(Vector2));
-	void* data = malloc(size);
-	memset(data, 0, size);
-
 	this->vertexCount = vertexCount;
 	this->indexCount = indexCount;
+	uint32_t size = GetBufferSize();
+
+	void* data = malloc(size);
+	if (!data)
+		throw std::runtime_error("Failed to allocate memory");
+
+	memset(data, 0, size);
+
 	size_t position = (size_t)data;
 
 	positions = (Position*)position;
@@ -105,13 +110,13 @@ void MeshData::SetVerticesData(const VertexData* vertices, Size count)
 	for (Size i = 0; i < vertexCount; i++)
 	{
 		positions[i] = vertices[i].pos;
-		texCoords[i] = PackTexCoord(vertices[i].texCoord);
-		colours[i] = PackColour(vertices[i].colour);
 #ifdef NormalIsVector3
 		normals[i] = vertices[i].normal;
 #else
 		normals[i] = PackNormal(vertices[i].normal);
 #endif
+		colours[i] = PackColour(vertices[i].colour);
+		texCoords[i] = PackTexCoord(vertices[i].texCoord);
 	}
 }
 
@@ -177,7 +182,8 @@ MeshData::Colour MeshData::PackColour(const Vector4& colour)
 MeshData::TexCoord MeshData::PackTexCoord(const Vector2& texcoord)
 {
 	//2x GL_UNSIGNED_SHORT
-	return TexCoord((GLushort)(texcoord.x * 0xFFFF), (GLushort)(texcoord.y * 0xFFFF));
+	
+	return TexCoord((GLushort)(texcoord.x * USHRT_MAX), (GLushort)(texcoord.y * USHRT_MAX));
 }
 #pragma endregion
 

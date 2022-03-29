@@ -17,7 +17,7 @@ const Matrix4x4& Camera::GetViewProjectionMatrix() const
 
 void Camera::UpdateCamera()
 {
-	viewMatrix = glm::inverse(transform.GetMatrix());
+	viewMatrix = glm::inverse(transform.GetLocalMatrix());
 	projectionMatrix = glm::perspective(fov, aspect, near, far);
 	viewProjectionMatrix = projectionMatrix * viewMatrix;
 }

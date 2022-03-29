@@ -58,7 +58,7 @@ void Material::Use() const
 		for (auto& tex : textures)
 		{
 			glActiveTexture(GL_TEXTURE0 + tex.attachedUnit);
-			glBindTexture(GL_TEXTURE_2D, tex.texture->GetID());
+			glBindTexture(GL_TEXTURE_2D, tex.texture ? tex.texture->GetID() : 0);
 		}
 	}
 }

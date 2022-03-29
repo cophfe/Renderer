@@ -21,6 +21,6 @@ void Object::UpdateUniform()
 {
 	Camera* cam = Program::GetInstance()->GetRenderer().GetMainCamera();
 
-	material->SetUniform(MVPMatrix, cam->GetViewProjectionMatrix() * transform.GetMatrix());
-	material->SetUniform(ModelMatrix, transform.GetMatrix());
+	material->SetUniform(MVPMatrix, cam->GetViewProjectionMatrix() * transform.GetLocalMatrix());
+	material->SetUniform(ModelMatrix, transform.GetLocalMatrix());
 }

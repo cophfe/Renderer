@@ -23,7 +23,7 @@ Texture2D* Texture2D::Init(const char* path,
 	glTexImage2D(GL_TEXTURE_2D, mipMapCount, GL_RGBA, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
-	SetFiltering(filtering);
+	SetFiltering(textureFiltering);
 	SetWrapMode(wrapMode);
 	SetFiltering(mipMapFiltering);
 

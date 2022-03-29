@@ -5,54 +5,224 @@ Transform::Transform()
 	scale = Vector3(1, 1, 1); 
 	rotation = glm::quat_identity<float, glm::qualifier::defaultp>(); 
 	position = Vector3(0, 0, 0); 
-	UpdateMatrix();
+	UpdateLocalMatrix();
 };
 
-void Transform::SetPosition(const Vector3& position)
+#pragma region Local
+void Transform::SetLocalPosition(const Vector3& position)
 {
 	this->position = position;
-	UpdateMatrix();
+	UpdateLocalMatrix();
 }
 
-void Transform::SetRotation(const Quaternion& rotation)
+void Transform::SetLocalRotation(const Quaternion& rotation)
 {
 	this->rotation = rotation;
-	UpdateMatrix();
+	UpdateLocalMatrix();
 }
 
-void Transform::SetScale(Vector3 scale)
+void Transform::SetLocalScale(const Vector3& scale)
 {
 	this->scale = scale;
-	UpdateMatrix();
+	UpdateLocalMatrix();
 }
 
-void Transform::SetScale(float scale)
+void Transform::SetLocalScale(float scale)
 {
 	this->scale = Vector3(scale, scale, scale);
-	UpdateMatrix();
+	UpdateLocalMatrix();
 }
 
-void Transform::UpdateMatrix()
+void Transform::UpdateLocalMatrix()
 {
 	//ordered as translate, rotate, scale
 	//which don't really make sense, surely it should be rotate, then scale, THEN translate, but whatever idk
 
-	matrix = glm::translate(glm::identity<Matrix4x4>(), position);
-	matrix = matrix * glm::toMat4(rotation);
-	matrix = glm::scale(matrix, scale);
+	localMatrix = glm::translate(glm::identity<Matrix4x4>(), position);
+	localMatrix = localMatrix * glm::toMat4(rotation);
+	localMatrix = glm::scale(localMatrix, scale);
+
+	UpdateGlobalMatrix();
+}
+
+Vector3&& Transform::GetLocalForward() const
+{
+	return localMatrix[2];
+}
+
+Vector3&& Transform::GetLocalUp() const
+{
+	return localMatrix[1];
+}
+
+Vector3&& Transform::GetLocalRight() const
+{
+	return localMatrix[0];
+}
+#pragma endregion
+
+#pragma region Global
+void Transform::SetPosition(const Vector3& position)
+{
+	this->position = InverseTransformPoint(position);
+	UpdateLocalMatrix();
+}
+
+void Transform::SetRotation(const Quaternion& rotation)
+{
+	this->rotation = InverseTransformRotation(rotation);
+	UpdateLocalMatrix();
+}
+
+void Transform::UpdateGlobalMatrix()
+{
+	if (parent)
+		globalMatrix = localMatrix * parent->GetGlobalMatrix();
+	else
+		globalMatrix = localMatrix;
+
+	for (auto& child : children)
+	{
+		child->UpdateGlobalMatrix();
+	}
+}
+
+void Transform::Rotate(const Quaternion& rot)
+{
+	//get rotation of inverse matrix
+	//this might not actually be the same, we will see
+
+	Quaternion localRot = InverseTransformRotation(rot);
+	rotation *= localRot;
+
+	UpdateLocalMatrix();
+}
+
+void Transform::Rotate(float rotation, const Vector3& axis)
+{
+	Vector3 localAxis = Vector4(axis, 0) * GetGlobalToLocalMatrix();
+
+	UpdateLocalMatrix();
+}
+
+void Transform::Move(const Vector3& move)
+{
+	Vector3 localMove = Vector4(move, 1) * GetGlobalToLocalMatrix();
+	LocalMove(position);
+
+	UpdateLocalMatrix();
 }
 
 Vector3&& Transform::GetForward() const
 {
-	return matrix[2];
+	return globalMatrix[2];
 }
 
 Vector3&& Transform::GetUp() const
 {
-	return matrix[1];
+	return globalMatrix[1];
 }
 
 Vector3&& Transform::GetRight() const
 {
-	return matrix[0];
+	return globalMatrix[0];
 }
+
+Vector3&& Transform::GetPosition() const
+{
+	return Vector3(globalMatrix[3]);
+}
+
+Quaternion&& Transform::GetRotation() const
+{
+	//madre de dios, este es muy caro
+
+	Vector3 scale = GetScale();
+	Matrix3x3 rotation(
+		Vector3(globalMatrix[0]) / scale.x,
+		Vector3(globalMatrix[1]) / scale.y,
+		Vector3(globalMatrix[2]) / scale.z
+	);
+
+	return glm::quat_cast(rotation);
+}
+
+Vector3&& Transform::GetScale() const
+{
+	return Vector3(glm::length(globalMatrix[0]),
+		glm::length(globalMatrix[1]),
+		glm::length(globalMatrix[2]));
+}
+#pragma endregion
+
+#pragma region Transform
+
+Matrix4x4&& Transform::GetGlobalToLocalMatrix() const
+{
+	return glm::inverse(globalMatrix);
+}
+Vector3&& Transform::TransformPoint(const Vector3& point) const
+{
+	return Vector4(point, 1.0) * globalMatrix;
+}
+Vector3&& Transform::InverseTransformPoint(const Vector3& point) const
+{
+	return Vector4(point, 1.0) * GetGlobalToLocalMatrix();
+}
+Quaternion&& Transform::TransformRotation(const Quaternion& rotation) const
+{
+	return rotation * GetRotation();
+}
+Quaternion&& Transform::InverseTransformRotation(const Quaternion& rotation) const
+{
+	Quaternion inverseRotation = glm::inverse(GetRotation());
+	return rotation * inverseRotation;
+}
+Vector3&& Transform::TransformDirection(const Vector3& direction) const
+{
+	return Vector4(direction, 0.0) * globalMatrix;
+}
+Vector3&& Transform::InverseTransformDirection(const Vector3& direction) const
+{
+	return Vector4(direction, 0.0) * GetGlobalToLocalMatrix();
+}
+#pragma endregion
+
+#pragma region Hierarchy
+Transform* Transform::GetChild(int index) const
+{
+	if (index < 0 || index >= children.size())
+		return nullptr;
+	else
+		return children[index];
+}
+
+void Transform::AddChild(Transform* child)
+{
+	child->SetParent(this);
+
+}
+
+void Transform::RemoveChild(int index)
+{
+	if (index < 0 || index >= children.size())
+		return;
+	else
+	{
+
+	}
+}
+
+void Transform::RemoveChild(Transform* child)
+{
+}
+
+bool Transform::IsParentOf(Transform* child)
+{
+	return false;
+}
+
+void Transform::SetParent(Transform* parent)
+{
+}
+#pragma endregion
