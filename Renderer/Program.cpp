@@ -44,10 +44,11 @@ void Program::Init()
 
 	auto& tM = renderer.GetTextureManager();
 
-	Shader* fragment = renderer.CreateShader("Shader/Default.frag", Shader::Type::Fragment);
-	Shader* vertex = renderer.CreateShader("Shader/Default.vert", Shader::Type::Vertex);
+	Shader* fragment = renderer.CreateShader("Shaders/Default.frag", Shader::Type::Fragment);
+	Shader* vertex = renderer.CreateShader("Shaders/Default.vert", Shader::Type::Vertex);
 	Material* defaultMaterial = renderer.CreateMaterial(vertex, fragment);
-	defaultMaterial->SetTextureSampler("_MainTex", tM.LoadTexture("Planet.jpg"));
+	defaultMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("metal_diffuse.jpg"));
+	defaultMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("metal_normal.jpg"));
 
 	MeshData data;
 	MeshPrimitive::SetCube(data);
@@ -63,7 +64,8 @@ void Program::Init()
 	}
 	//other object
 	Material* otherMaterial = renderer.CreateMaterial(vertex, fragment);
-	otherMaterial->SetTextureSampler("_MainTex", tM.LoadTexture("pixel.png"));
+	otherMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("pixel.png"));
+	otherMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("normal.png"));
 	t = CreateObject(mesh, otherMaterial)->GetTransform();
 	t.SetLocalPosition(Vector3(-5, 0, -4));
 
@@ -93,7 +95,9 @@ void Program::Init()
 	datas = MeshBuilder::LoadMeshData(meshCount, "Models/soulspear.obj");
 
 	Material* otherOtherMaterial = renderer.CreateMaterial(vertex, fragment);
-	otherOtherMaterial->SetTextureSampler("_MainTex", tM.LoadTexture("soulspear_diffuse.tga"));
+	otherOtherMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("soulspear_diffuse.tga"));
+	otherOtherMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("soulspear_normal.tga"));
+	otherOtherMaterial->SetTextureSampler("_SpecularMap", tM.LoadTexture("soulspear_specular.tga"));
 
 	for (size_t i = 0; i < meshCount; i++)
 	{
@@ -140,37 +144,40 @@ void Program::Loop()
 		glfwPollEvents();
 		Update();
 
-		Vector3 cameraDir = Vector3();
-		Transform& t = renderer.GetMainCamera()->GetTransform();
+		if (cameraMoving)
+		{
+			Vector3 cameraDir = Vector3();
+			Transform& t = renderer.GetMainCamera()->GetTransform();
 
-		GLFWwindow* window = GetWindow();
-		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		{
-			cameraDir -= t.GetLocalForward();
+			GLFWwindow* window = GetWindow();
+			if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			{
+				cameraDir -= t.GetLocalForward();
+			}
+			if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			{
+				cameraDir += t.GetLocalForward();
+			}
+			if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			{
+				cameraDir -= t.GetLocalRight();
+			}
+			if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			{
+				cameraDir += t.GetLocalRight();
+			}
+			if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+			{
+				cameraDir -= t.GetLocalUp();
+			}
+			if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+			{
+				cameraDir += t.GetLocalUp();
+			}
+			if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
+				cameraDir *= 2;
+			t.LocalMove(cameraDir * ((float)deltaTime * 2.0f));
 		}
-		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		{
-			cameraDir += t.GetLocalForward();
-		}
-		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		{
-			cameraDir -= t.GetLocalRight();
-		}
-		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		{
-			cameraDir += t.GetLocalRight();
-		}
-		if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		{
-			cameraDir -= t.GetLocalUp();
-		}
-		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-		{
-			cameraDir += t.GetLocalUp();
-		}
-		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
-			cameraDir *= 2;
-		t.LocalMove(cameraDir * ((float)deltaTime * 2.0f));
 	}
 }
 
@@ -229,12 +236,20 @@ void Program::KeyReleased(int key)
 
 void Program::MousePressed(int button)
 {
-	glfwSetInputMode(GetWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
+	if (button == GLFW_MOUSE_BUTTON_2)
+	{
+		cameraMoving = true;
+		glfwSetInputMode(GetWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	}
 }
 
 void Program::MouseReleased(int button)
 {
+	if (button == GLFW_MOUSE_BUTTON_2 && cameraMoving)
+	{
+		cameraMoving = false;
+		glfwSetInputMode(GetWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	}
 }
 
 void Program::MouseMove(Vector2 delta)
@@ -242,12 +257,15 @@ void Program::MouseMove(Vector2 delta)
 	if (!windowFocused)
 		return;
 
-	auto& t = renderer.GetMainCamera()->GetTransform();
+	if (cameraMoving)
+	{
+		auto& t = renderer.GetMainCamera()->GetTransform();
 
-	static Vector2 rotation = Vector2();
-	rotation += delta * -0.0007f;
-	rotation.y = glm::clamp(rotation.y, glm::radians(- 90.0f) , glm::radians(90.0f));
-	t.SetLocalRotation(glm::angleAxis(rotation.x, Vector3(0,1,0)) * glm::angleAxis(rotation.y, Vector3(1, 0, 0)));
+		static Vector2 rotation = Vector2();
+		rotation += delta * -0.0007f;
+		rotation.y = glm::clamp(rotation.y, glm::radians(-90.0f), glm::radians(90.0f));
+		t.SetLocalRotation(glm::angleAxis(rotation.x, Vector3(0, 1, 0)) * glm::angleAxis(rotation.y, Vector3(1, 0, 0)));
+	}
 }
 
 void Program::MouseScroll(float delta)
@@ -263,6 +281,12 @@ void Program::WindowResize(Vector2Int size)
 void Program::WindowFocus(bool focus)
 {
 	windowFocused = focus;
+
+	if (!windowFocused && cameraMoving)
+	{
+		cameraMoving = false;
+		glfwSetInputMode(GetWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	}
 }
 #pragma endregion
 
@@ -280,7 +304,7 @@ void Program::OnWindowFocus(GLFWwindow* window, int focused)
 	}
 	else 
 	{
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		
 	}
 
 	

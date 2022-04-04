@@ -64,6 +64,7 @@ private:
 	double deltaTime;
 	double lastTime;
 	bool windowFocused = true;
+	bool cameraMoving = false;
 
 	const float shaderRecompileTime = 1;
 	float shaderRecompileTimer;

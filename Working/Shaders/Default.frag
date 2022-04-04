@@ -28,9 +28,11 @@ out vec4 Colour;
 in vec2 TexCoord;
 in vec3 FragPos;
 in vec3 Normal;
+in mat3 TBNMatrix;
 
-uniform sampler2D _MainTex;
-//uniform sampler2D _NormalMap;
+uniform sampler2D _DiffuseMap;
+uniform sampler2D _NormalMap;
+uniform sampler2D _SpecularMap;
 uniform MaterialData _Material;
 
 layout (std140, binding = 2) uniform Lighting
@@ -106,12 +108,10 @@ vec3 GetSpotLight(LightData light, vec3 normal, vec3 diffuseColour, vec3 surface
 void main()
 {
 	//Get normal
-	//vec3 TSNormal = texture(_NormalMap, TexCoord).xyz;
-	//vec3 OSNormal = (_TBNMatrix * vec4(TSNormal, 1)).xyz;
-	//vec3 WSNormal
-    
-	vec3 normal = normalize(Normal);
-    vec3 diffuseColour = texture(_MainTex, TexCoord).xyz;
+	vec3 normalTS = texture(_NormalMap, TexCoord).xyz * 2 - 1;
+	vec3 normalWS = normalize(TBNMatrix * normalTS); //TBN Matrix is in world space
+
+    vec3 diffuseColour = texture(_DiffuseMap, TexCoord.xy).xyz;
     vec3 surfaceToCamera = normalize(_CameraPosition - FragPos);
     
     //Light Values
@@ -124,20 +124,21 @@ void main()
         switch(_Lights[i].type)
         {
             case 0: // directional light
-            lightPower += GetDirectionalLight(_Lights[i], normal, diffuseColour, surfaceToCamera);
+            lightPower += GetDirectionalLight(_Lights[i], normalWS, diffuseColour, surfaceToCamera);
             break;
 
             case 1: // point light
-            lightPower += GetPointLight(_Lights[i], normal, diffuseColour, surfaceToCamera);
+            lightPower += GetPointLight(_Lights[i], normalWS, diffuseColour, surfaceToCamera);
             break;
 
             case 2: // spot light
-            lightPower += GetSpotLight(_Lights[i], normal, diffuseColour, surfaceToCamera);
+            lightPower += GetSpotLight(_Lights[i], normalWS, diffuseColour, surfaceToCamera);
             break;
         }
     }
-
-	//Colour = vec4(diffuseColour, 1.0);
+//
+	//Colour = vec4(TexCoord.xy, 0, 1.0);
+    //Colour = vec4(diffuseColour, 1.0);
     Colour = vec4(lightPower, 1.0);
 } 
 

@@ -64,13 +64,18 @@ MeshData* MeshBuilder::LoadMesh(int& meshCount, const aiScene* scene)
 		{
 			mD.SetNormals((Vector3*)mesh.mNormals, vCount);
 		}
+		if (mesh.HasTangentsAndBitangents())
+		{
+			mD.SetTangents((Vector3*)mesh.mTangents, vCount);
+			mD.SetBitangents((Vector3*)mesh.mBitangents, vCount);
+		}
 		if (mesh.HasTextureCoords(0))
 		{
 			//we only care about the first texCoord right now because that's all MeshData supports
 			for (size_t j = 0; j  < vCount; j ++)
 			{
 				//this ignores the last component of the 3D texCoord, cuz we only use 2D texCoords
-				mD.texCoords[j] = *(Vector2*)&(mesh.mTextureCoords[0][j]);
+				mD.texCoords[j] = Vector2(mesh.mTextureCoords[0][j].x, mesh.mTextureCoords[0][j].y);
 			}
 			
 		}

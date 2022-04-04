@@ -41,6 +41,8 @@ struct MeshData
 
 	void SetPositions(const Position* positions, Size count);
 	void SetNormals(const Normal* normals, Size count);
+	void SetTangents(const Normal* tangents, Size count);
+	void SetBitangents(const Normal* biTangents, Size count);
 #ifndef NormalIsVector3
 	void SetNormals(const Vector3* normals, Size count);
 #endif
@@ -65,6 +67,8 @@ struct MeshData
 	//these are stored sequentially in memory, just for ezness factor (aka this is the buffer that will be uploaded onto the gpu)
 	Position* positions;
 	Normal* normals;
+	Normal* tangents;
+	Normal* bitangents;
 	TexCoord* texCoords;
 
 	Size indexCount;
@@ -79,5 +83,8 @@ struct MeshData
 	~MeshData();
 	MeshData(const MeshData& other);
 	MeshData& operator= (const MeshData& other);
+
+private:
+	Vector3 CalculateTangent(size_t index);
 };
 

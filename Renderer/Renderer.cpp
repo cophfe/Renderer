@@ -36,8 +36,6 @@ void Renderer::Init(const char* texturePath)
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
 	Vector2Int size;
 	glfwGetWindowSize(window, &size.x, &size.y);
 	mainCamera = new Camera(glm::radians(65.0f), size.x / (float)size.y, 0.001, 100);

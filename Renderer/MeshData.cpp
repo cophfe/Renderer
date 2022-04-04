@@ -20,7 +20,10 @@ MeshData* MeshData::AllocateMeshData(Size vertexCount, Size indexCount)
 
  	normals = (Normal*)position;
 	position += sizeof(Normal) * vertexCount;
-
+ 	tangents = (Normal*)position;
+	position += sizeof(Normal) * vertexCount;
+ 	bitangents = (Normal*)position;
+	position += sizeof(Normal) * vertexCount;
 	texCoords = (TexCoord*)position;
 
 	if (indexCount)
@@ -46,6 +49,22 @@ void MeshData::SetNormals(const Normal* normals, Size count)
 		throw "Array size does not match vertex count\n";
 
 	memcpy(this->normals, normals, count * sizeof(Normal));
+}
+
+void MeshData::SetTangents(const Normal* tangents, Size count)
+{
+	if (count != vertexCount)
+		throw "Array size does not match vertex count\n";
+
+	memcpy(this->tangents, tangents, count * sizeof(Normal));
+}
+
+void MeshData::SetBitangents(const Normal* bitangents, Size count)
+{
+	if (count != vertexCount)
+		throw "Array size does not match vertex count\n";
+
+	memcpy(this->bitangents, bitangents, count * sizeof(Normal));
 }
 
 #ifndef NormalIsVector3
@@ -117,6 +136,29 @@ void MeshData::CalculateNormals(bool clockwise)
 		normals[i1] = n;
 		normals[i2] = n;
 		normals[i3] = n;
+
+		//tangent is parallel to the normal, pointed in the direction of the texcoord
+		//https://learnopengl.com/Advanced-Lighting/Normal-Mapping
+
+		Vector2 dirUVFirst = texCoords[i2] - texCoords[i1];
+		Vector2 dirUVSecond = texCoords[i3] - texCoords[i1];
+
+		Vector3 edgeFirst = positions[i2] - positions[i1];
+		Vector3 edgeSecond = positions[i3] - positions[i1];
+		//cross.z ^ - 1
+		Vector3 t = 1.0f / (dirUVFirst.x * dirUVSecond.y - dirUVSecond.x * dirUVFirst.y) *
+			Vector3(
+				dirUVSecond.y * edgeFirst.x - dirUVFirst.y * edgeSecond.x,
+				dirUVSecond.y * edgeFirst.y - dirUVFirst.y * edgeSecond.y,
+				dirUVSecond.y * edgeFirst.z - dirUVFirst.y * edgeSecond.z);
+		tangents[i1] = t;
+		tangents[i2] = t;
+		tangents[i3] = t;
+
+		Vector3 b = glm::cross(n, t);
+		bitangents[i1] = b;
+		bitangents[i2] = b;
+		bitangents[i3] = b;
 	}
 }
 
@@ -160,7 +202,7 @@ MeshData::Normal MeshData::PackNormal(const Vector3& normal)
 
 MeshData::Size MeshData::GetBufferSize()
 {
-	return vertexCount * (sizeof(Position) + sizeof(Normal) + sizeof(TexCoord));
+	return vertexCount * (sizeof(Position) + 3 * sizeof(Normal) + sizeof(TexCoord));
 }
 
 MeshData::MeshData(MeshData&& other) noexcept

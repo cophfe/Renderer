@@ -43,14 +43,30 @@ Mesh* Mesh::Init(MeshData& data, bool isStatic, bool storeMeshOnCPU)
 	//Normal
 #ifdef NormalIsVector3
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(MeshData::Normal), (void*)offset);
-#else
-	glVertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(MeshData::Normal), (void*)offset);
-#endif
 	glEnableVertexAttribArray(1);
 	offset += verticesCount * sizeof(MeshData::Normal);
-	//TexCoord
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(MeshData::TexCoord), (void*)offset);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(MeshData::Normal), (void*)offset); //tangent
 	glEnableVertexAttribArray(2);
+	offset += verticesCount * sizeof(MeshData::Normal);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(MeshData::Normal), (void*)offset); //bitangent
+	glEnableVertexAttribArray(3);
+	offset += verticesCount * sizeof(MeshData::Normal);
+#else
+	glVertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(MeshData::Normal), (void*)offset);
+	glEnableVertexAttribArray(1);
+	offset += verticesCount * sizeof(MeshData::Normal);
+	glVertexAttribPointer(2, 4, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(MeshData::Normal), (void*)offset);
+	glEnableVertexAttribArray(2);
+	offset += verticesCount * sizeof(MeshData::Normal);
+	glVertexAttribPointer(3, 4, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(MeshData::Normal), (void*)offset);
+	glEnableVertexAttribArray(3);
+	offset += verticesCount * sizeof(MeshData::Normal);
+#endif
+	
+
+	//TexCoord
+	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(MeshData::TexCoord), (void*)offset);
+	glEnableVertexAttribArray(4);
 	
 	//Now set up element buffer
 	if (indicesCount)
