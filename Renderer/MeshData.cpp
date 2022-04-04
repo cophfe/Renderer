@@ -21,9 +21,6 @@ MeshData* MeshData::AllocateMeshData(Size vertexCount, Size indexCount)
  	normals = (Normal*)position;
 	position += sizeof(Normal) * vertexCount;
 
-	colours = (Colour*)position;
-	position += sizeof(Colour) * vertexCount;
-
 	texCoords = (TexCoord*)position;
 
 	if (indexCount)
@@ -64,25 +61,6 @@ void MeshData::SetNormals(const Vector3* normals, Size count)
 }
 #endif
 
-void MeshData::SetColours(const Colour* colours, Size count)
-{
-	if (count != vertexCount)
-		throw "Array size does not match vertex count\n";
-
-	memcpy(this->colours, colours, count * sizeof(Colour));
-}
-
-void MeshData::SetColours(const Vector4* colours, Size count)
-{
-	if (count != vertexCount)
-		throw "Array size does not match vertex count\n";
-
-	for (Size i = 0; i < vertexCount; i++)
-	{
-		this->colours[i] = PackColour(colours[i]);
-	}
-}
-
 void MeshData::SetTexCoords(const TexCoord* coords, Size count)
 {
 	if (count != vertexCount)
@@ -90,17 +68,17 @@ void MeshData::SetTexCoords(const TexCoord* coords, Size count)
 	
 	memcpy(this->texCoords, texCoords, count * sizeof(TexCoord));
 }
-
-void MeshData::SetTexCoords(const Vector2* coords, Size count)
-{
-	if (count != vertexCount)
-		throw "Array size does not match vertex count\n";
-
-	for (Size i = 0; i < count; i++)
-	{
-		this->texCoords[i] = PackTexCoord(coords[i]);
-	}
-}
+//
+//void MeshData::SetTexCoords(const Vector2* coords, Size count)
+//{
+//	if (count != vertexCount)
+//		throw "Array size does not match vertex count\n";
+//
+//	for (Size i = 0; i < count; i++)
+//	{
+//		this->texCoords[i] = PackTexCoord(coords[i]);
+//	}
+//}
 
 void MeshData::SetVerticesData(const VertexData* vertices, Size count)
 {
@@ -115,8 +93,7 @@ void MeshData::SetVerticesData(const VertexData* vertices, Size count)
 #else
 		normals[i] = PackNormal(vertices[i].normal);
 #endif
-		colours[i] = PackColour(vertices[i].colour);
-		texCoords[i] = PackTexCoord(vertices[i].texCoord);
+		texCoords[i] = vertices[i].texCoord;// PackTexCoord(vertices[i].texCoord);
 	}
 }
 
@@ -173,23 +150,17 @@ MeshData::Normal MeshData::PackNormal(const Vector3& normal)
 }
 #endif
 
-MeshData::Colour MeshData::PackColour(const Vector4& colour)
-{
-	//4x GL_UNSIGNED_BYTE
-	return Colour((GLubyte)(colour.x * 255), (GLubyte)(colour.y * 255), (GLubyte)(colour.z * 255), (GLubyte)(colour.w * 255));
-}
-
-MeshData::TexCoord MeshData::PackTexCoord(const Vector2& texcoord)
-{
-	//2x GL_UNSIGNED_SHORT
-	
-	return TexCoord((GLushort)(texcoord.x * USHRT_MAX), (GLushort)(texcoord.y * USHRT_MAX));
-}
+//MeshData::TexCoord MeshData::PackTexCoord(const Vector2& texcoord)
+//{
+//	//2x GL_UNSIGNED_SHORT
+//	
+//	return TexCoord((GLushort)(texcoord.x * USHRT_MAX), (GLushort)(texcoord.y * USHRT_MAX));
+//}
 #pragma endregion
 
 MeshData::Size MeshData::GetBufferSize()
 {
-	return vertexCount * (sizeof(Position) + sizeof(Normal) + sizeof(Colour) + sizeof(TexCoord));
+	return vertexCount * (sizeof(Position) + sizeof(Normal) + sizeof(TexCoord));
 }
 
 MeshData::MeshData(MeshData&& other) noexcept
@@ -203,13 +174,11 @@ MeshData::MeshData(MeshData&& other) noexcept
 
 		positions = other.positions;
 		normals = other.normals;
-		colours = other.colours;
 		texCoords = other.texCoords;
 		indices = other.indices;
 
 		other.positions = nullptr;
 		other.normals = nullptr;
-		other.colours = nullptr;
 		other.texCoords = nullptr;
 		other.indices = nullptr;
 	}
@@ -237,13 +206,11 @@ MeshData& MeshData::operator=(MeshData&& other) noexcept
 
 		positions = other.positions;
 		normals = other.normals;
-		colours = other.colours;
 		texCoords = other.texCoords;
 		indices = other.indices;
 
 		other.positions = nullptr;
 		other.normals = nullptr;
-		other.colours = nullptr;
 		other.texCoords = nullptr;
 		other.indices = nullptr;
 	}
@@ -262,7 +229,6 @@ MeshData::~MeshData()
 		free(positions);
 		positions = nullptr;
 		normals = nullptr;
-		colours = nullptr;
 		texCoords = nullptr;
 	}
 

@@ -14,7 +14,6 @@ class MeshBuilder
 public:
 	static MeshData* LoadMeshData(int& meshCount, const char* path);
 	static MeshData* LoadMeshData(int& meshCount, void* buffer, size_t size);
-	static Object* AutoConstructObject(const char* path, Material* litMaterial);
 
 	static void FreeMeshArray(MeshData*& data, int meshCount);
 private:

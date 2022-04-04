@@ -44,14 +44,13 @@ void Program::Init()
 
 	auto& tM = renderer.GetTextureManager();
 
-	Shader* fragment = renderer.CreateShader("Default.frag", Shader::Type::Fragment);
-	Shader* vertex = renderer.CreateShader("Default.vert", Shader::Type::Vertex);
+	Shader* fragment = renderer.CreateShader("Shader/Default.frag", Shader::Type::Fragment);
+	Shader* vertex = renderer.CreateShader("Shader/Default.vert", Shader::Type::Vertex);
 	Material* defaultMaterial = renderer.CreateMaterial(vertex, fragment);
 	defaultMaterial->SetTextureSampler("_MainTex", tM.LoadTexture("Planet.jpg"));
 
 	MeshData data;
 	MeshPrimitive::SetCube(data);
-	memset(data.colours, 0xFF, data.vertexCount * sizeof(MeshData::Colour));
 
 	Mesh* mesh = renderer.CreateMesh(data);
 	auto& t = CreateObject(mesh, defaultMaterial)->GetTransform();
@@ -69,7 +68,7 @@ void Program::Init()
 	t.SetLocalPosition(Vector3(-5, 0, -4));
 
 	int meshCount;
-	MeshData* datas = MeshBuilder::LoadMeshData(meshCount, "monkey.obj");
+	MeshData* datas = MeshBuilder::LoadMeshData(meshCount, "Models/monkey.obj");
 
 	for (size_t i = 0; i < meshCount; i++)
 	{
@@ -79,7 +78,7 @@ void Program::Init()
 	}
 	MeshBuilder::FreeMeshArray(datas, meshCount);
 
-	datas = MeshBuilder::LoadMeshData(meshCount, "duck.obj");
+	datas = MeshBuilder::LoadMeshData(meshCount, "Models/duck.obj");
 
 	for (size_t i = 0; i < meshCount; i++)
 	{
@@ -91,10 +90,10 @@ void Program::Init()
 	}
 	MeshBuilder::FreeMeshArray(datas, meshCount);
 	
-	datas = MeshBuilder::LoadMeshData(meshCount, "grumpy.obj");
+	datas = MeshBuilder::LoadMeshData(meshCount, "Models/soulspear.obj");
 
 	Material* otherOtherMaterial = renderer.CreateMaterial(vertex, fragment);
-	otherOtherMaterial->SetTextureSampler("_MainTex", tM.LoadTexture("grumpy.png"));
+	otherOtherMaterial->SetTextureSampler("_MainTex", tM.LoadTexture("soulspear_diffuse.tga"));
 
 	for (size_t i = 0; i < meshCount; i++)
 	{
@@ -117,7 +116,7 @@ void Program::Init()
 
 void Program::InitGraphics()
 {
-	renderer.Init("");
+	renderer.Init("Textures/");
 }
 
 void Program::InitCallbacks()
@@ -240,6 +239,9 @@ void Program::MouseReleased(int button)
 
 void Program::MouseMove(Vector2 delta)
 {
+	if (!windowFocused)
+		return;
+
 	auto& t = renderer.GetMainCamera()->GetTransform();
 
 	static Vector2 rotation = Vector2();
@@ -258,12 +260,20 @@ void Program::WindowResize(Vector2Int size)
 	//if (camera)
 	//	camera->SetAspect(size);
 }
+void Program::WindowFocus(bool focus)
+{
+	windowFocused = focus;
+}
 #pragma endregion
 
 #pragma region Static Callback
 
 void Program::OnWindowFocus(GLFWwindow* window, int focused)
 {
+	Program* instance = Program::instance;
+	if (instance)
+		instance->WindowFocus(focused);
+
 	if (focused)
 	{
 		//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -272,6 +282,8 @@ void Program::OnWindowFocus(GLFWwindow* window, int focused)
 	{
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
+
+	
 }
 
 void Program::OnWindowResize(GLFWwindow* window, int width, int height)

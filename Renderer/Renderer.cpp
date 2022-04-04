@@ -83,12 +83,13 @@ void Renderer::RecompileShaders()
 		{
 			shaders[i]->Recompile();
 
-			//note: small but actually extremely major issue: shader uniforms get reset on recompile
-			for (size_t i = 0; i < materials.size(); i++)
+			//extremely major issue: shader uniforms get reset on recompile
+			//also big issue: sometimes just dissappears
+			for (size_t j = 0; j < materials.size(); j++)
 			{
-				if (materials[i]->UsesShader(shaders[i]))
+				if (materials[j]->UsesShader(shaders[i]))
 				{
-					materials[i]->ReloadMaterial();
+					materials[j]->ReloadMaterial();
 				}
 			}
 		}

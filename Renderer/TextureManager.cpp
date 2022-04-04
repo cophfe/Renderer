@@ -21,7 +21,7 @@ Texture2D* TextureManager::LoadTextureParams(const char* name, unsigned int mipM
 {
 	if (!map.contains(name))
 	{
-		Texture2D* tex = Texture2D::InitNew(name, mipMapCount, textureFiltering, mipMapFiltering, wrapMode);
+		Texture2D* tex = Texture2D::InitNew((path + std::string(name)).c_str(), mipMapCount, textureFiltering, mipMapFiltering, wrapMode);
 		map.insert(std::make_pair(std::string(name), tex));
 		return tex;
 	}
@@ -33,7 +33,7 @@ Texture2D* TextureManager::LoadTexture(const char* name)
 {
 	if (!map.contains(name))
 	{
-		Texture2D* tex = Texture2D::InitNew(name, mipMapCount, textureFiltering, mipMapFiltering, wrapMode);
+		Texture2D* tex = Texture2D::InitNew((path + std::string(name)).c_str(), mipMapCount, textureFiltering, mipMapFiltering, wrapMode);
 		map.insert(std::make_pair(std::string(name), tex));
 		return tex;
 	}

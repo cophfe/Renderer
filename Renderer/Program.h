@@ -55,6 +55,7 @@ private:
 	void MouseMove(Vector2 delta);
 	void MouseScroll(float delta);
 	void WindowResize(Vector2Int size);
+	void WindowFocus(bool focus);
 #pragma endregion
 
 	Renderer renderer;
@@ -62,6 +63,7 @@ private:
 
 	double deltaTime;
 	double lastTime;
+	bool windowFocused = true;
 
 	const float shaderRecompileTime = 1;
 	float shaderRecompileTimer;

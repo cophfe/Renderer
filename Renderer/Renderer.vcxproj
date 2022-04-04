@@ -152,15 +152,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="CameraComponent.cpp" />
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="glad.c" />
+    <ClCompile Include="LightComponent.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MeshBuilder.cpp" />
     <ClCompile Include="MeshData.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="MeshPrimitive.cpp" />
+    <ClCompile Include="PlayerMoveComponent.cpp" />
     <ClCompile Include="Program.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
@@ -172,11 +175,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="glad.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="khrplatform.h" />
+    <ClInclude Include="LightComponent.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="Mesh.h" />
@@ -185,6 +190,7 @@
     <ClInclude Include="Object.h" />
     <ClInclude Include="MeshPrimitive.h" />
     <ClInclude Include="OBJ_Loader.h" />
+    <ClInclude Include="PlayerMoveComponent.h" />
     <ClInclude Include="Program.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Shader.h" />

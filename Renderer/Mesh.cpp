@@ -39,7 +39,7 @@ Mesh* Mesh::Init(MeshData& data, bool isStatic, bool storeMeshOnCPU)
 	//Position
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(MeshData::Position), (void*)0);
 	glEnableVertexAttribArray(0);
-	uint16_t offset = verticesCount * sizeof(MeshData::Position);
+	size_t offset = verticesCount * sizeof(MeshData::Position);
 	//Normal
 #ifdef NormalIsVector3
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(MeshData::Normal), (void*)offset);
@@ -48,13 +48,9 @@ Mesh* Mesh::Init(MeshData& data, bool isStatic, bool storeMeshOnCPU)
 #endif
 	glEnableVertexAttribArray(1);
 	offset += verticesCount * sizeof(MeshData::Normal);
-	//Colour
-	glVertexAttribPointer(2, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(MeshData::Colour), (void*)offset);
-	glEnableVertexAttribArray(2);
-	offset += verticesCount * sizeof(MeshData::Colour);
 	//TexCoord
-	glVertexAttribPointer(3, 2, GL_UNSIGNED_SHORT, GL_TRUE, sizeof(MeshData::TexCoord), (void*)offset);
-	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(MeshData::TexCoord), (void*)offset);
+	glEnableVertexAttribArray(2);
 	
 	//Now set up element buffer
 	if (indicesCount)
@@ -90,7 +86,7 @@ void Mesh::Render() const
 	glBindVertexArray(vertexArray);
 	
 	if (indicesCount)
-		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
 	else
 		glDrawArrays(GL_TRIANGLES, 0, verticesCount);
 }
