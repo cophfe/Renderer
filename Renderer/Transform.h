@@ -2,6 +2,7 @@
 #include "Graphics.h"
 #include "Math.h"
 #include <vector>
+class GameObject;
 
 class Transform
 {
@@ -58,6 +59,7 @@ public:
 
 	//Hierarchy
 	Transform* GetChild(int index) const;
+	Transform* GetParent() const { return parent; }
 	inline const std::vector<Transform*>& GetChildArray() { return children; }
 
 	void AddChild(Transform* child);
@@ -65,11 +67,13 @@ public:
 	void RemoveChild(Transform* child);
 
 	bool IsParentOf(Transform* child);
-	//
 	
 private:
-	void SetParent(Transform* parent);
+	friend GameObject;
+	void SetAttachedGameObject(GameObject* gO);
 
+	void SetParent(Transform* parent);
+	GameObject* gameObject;
 	//hierarchy
 	Transform* parent;
 	std::vector<Transform*> children;

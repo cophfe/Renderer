@@ -20,7 +20,7 @@ void CameraComponent::Unload()
 {
 }
 
-Component* CameraComponent::Clone()
+Component* CameraComponent::Clone() const
 {
     return nullptr;
 }

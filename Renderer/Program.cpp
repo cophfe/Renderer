@@ -30,6 +30,12 @@ Object* Program::CreateObject(Mesh* mesh, Material* material)
 	return object;
 }
 
+void Program::AddObject(GameObject* object)
+{
+	if (object->GetTransform().GetParent() == nullptr)
+		children.push_back(object);
+}
+
 void Program::Init()
 {
 	InitGraphics();
@@ -47,27 +53,28 @@ void Program::Init()
 	Shader* fragment = renderer.CreateShader("Shaders/Default.frag", Shader::Type::Fragment);
 	Shader* vertex = renderer.CreateShader("Shaders/Default.vert", Shader::Type::Vertex);
 	Material* defaultMaterial = renderer.CreateMaterial(vertex, fragment);
-	defaultMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("metal_diffuse.jpg"));
-	defaultMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("metal_normal.jpg"));
+	defaultMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("soulspear_diffuse.tga"));
+	defaultMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("soulspear_normal.tga"));
 
 	MeshData data;
 	MeshPrimitive::SetCube(data);
 
+	Material* metalMaterial = renderer.CreateMaterial(vertex, fragment);
+	metalMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("metal_diffuse.jpg"));
+	metalMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("metal_normal.jpg"));
 	Mesh* mesh = renderer.CreateMesh(data);
-	auto& t = CreateObject(mesh, defaultMaterial)->GetTransform();
-	t.SetLocalPosition(Vector3(0, 0, 0));
 
 	for (size_t i = 1; i < 30; i++)
 	{
-		CreateObject(mesh, defaultMaterial)->GetTransform().SetLocalPosition(Vector3(0, 0, -(1.5 * i)));
+		CreateObject(mesh, defaultMaterial)->GetTransform().SetLocalPosition(Vector3(4, 0, -(1.5 * i)));
 
 	}
 	//other object
 	Material* otherMaterial = renderer.CreateMaterial(vertex, fragment);
 	otherMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("pixel.png"));
 	otherMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("normal.png"));
-	t = CreateObject(mesh, otherMaterial)->GetTransform();
-	t.SetLocalPosition(Vector3(-5, 0, -4));
+	
+	CreateObject(mesh, defaultMaterial)->GetTransform();
 
 	int meshCount;
 	MeshData* datas = MeshBuilder::LoadMeshData(meshCount, "Models/monkey.obj");
@@ -75,8 +82,8 @@ void Program::Init()
 	for (size_t i = 0; i < meshCount; i++)
 	{
 		mesh = renderer.CreateMesh(datas[i]);
-		t = CreateObject(mesh, otherMaterial)->GetTransform();
-		t.SetLocalPosition(Vector3(-5, 2 * i, -4));
+		auto& transform = CreateObject(mesh, otherMaterial)->GetTransform();
+		transform.SetLocalPosition(Vector3(-5, 2 * i, -4));
 	}
 	MeshBuilder::FreeMeshArray(datas, meshCount);
 
@@ -103,8 +110,8 @@ void Program::Init()
 	{
 		mesh = renderer.CreateMesh(datas[i]);
 		auto& transform = CreateObject(mesh, otherOtherMaterial)->GetTransform();
-		transform.SetLocalPosition(Vector3(-10, 2, -4));
-		transform.SetLocalScale(3.0f);
+		transform.SetLocalPosition(Vector3(0, -3, -10));
+		transform.SetLocalScale(1.0f);
 	}
 	MeshBuilder::FreeMeshArray(datas, meshCount);
 

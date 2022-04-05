@@ -117,7 +117,6 @@ void Renderer::UpdateUniformBuffers()
 	light.position = mainCamera->GetTransform().GetLocalPosition();
 	light.direction = mainCamera->GetTransform().GetLocalForward();
 	light.luminance = Vector3(0.8f, 0.8f, 1.0f);
-	light.constant = 2;
 	light.linear = 0.2f;
 	light.quadratic = 0.07f;
 	light.minAngle = glm::cos(glm::radians(30.0f));

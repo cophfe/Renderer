@@ -163,7 +163,6 @@
     <ClCompile Include="MeshData.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="MeshPrimitive.cpp" />
-    <ClCompile Include="PlayerMoveComponent.cpp" />
     <ClCompile Include="Program.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
@@ -190,7 +189,6 @@
     <ClInclude Include="Object.h" />
     <ClInclude Include="MeshPrimitive.h" />
     <ClInclude Include="OBJ_Loader.h" />
-    <ClInclude Include="PlayerMoveComponent.h" />
     <ClInclude Include="Program.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Shader.h" />

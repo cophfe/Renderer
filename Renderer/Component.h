@@ -7,13 +7,13 @@ class Component
 	//just base it on this^ (made last year)
 
 public:
-	virtual Component* Clone() = 0;
+	virtual Component* Clone() const = 0;
 
 	void SetEnabled(bool enabled);
-	inline bool GetEnabled() { return enabled; }
-	inline GameObject* GetGameObject() { return gameObject; }
+	inline bool GetEnabled() const { return enabled; }
+	inline GameObject* GetGameObject() const { return gameObject; }
 
-private:
+protected:
 	friend GameObject;
 
 	virtual void Init() = 0;
@@ -23,6 +23,7 @@ private:
 	virtual void Unload() = 0;
 	void ConnectGameObject(GameObject* connected);
 
+private:
 	bool enabled;
 	bool initiated;
 	GameObject* gameObject;

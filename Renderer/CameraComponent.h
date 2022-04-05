@@ -10,6 +10,6 @@ private:
 	virtual void OnDisable() override;
 	virtual void OnEnable() override;
 	virtual void Unload() override;
-	virtual Component* Clone() override;
+	virtual Component* Clone() const override;
 };
 

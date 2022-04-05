@@ -9,6 +9,7 @@
 #include "UniformBuffer.h"
 #include "Renderer.h"
 #include "MeshBuilder.h"
+#include "GameObject.h"
 
 class Program
 {
@@ -24,6 +25,7 @@ public:
 	inline double GetDeltaTimeDouble() { return deltaTime; }
 	Object* CreateObject(Mesh* mesh, Material* material);
 
+	void AddObject(GameObject* object);
 private:
 	Program() = default;
 	Program(const Program& other) = delete;
@@ -60,6 +62,7 @@ private:
 
 	Renderer renderer;
 	std::vector<Object*> objects;
+	std::vector<GameObject*> children;
 
 	double deltaTime;
 	double lastTime;

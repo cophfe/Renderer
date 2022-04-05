@@ -11,9 +11,10 @@ Texture2D* Texture2D::Init(const char* path,
 	TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode)
 {
 	int channels = 0;
+	stbi_set_flip_vertically_on_load(true);
 	unsigned char* data = stbi_load(path, &size.x, &size.y, &channels, 4);
 
-	if (!data)
+	if (data == nullptr)
 	{
 		throw "Image data failed to load";
 	}

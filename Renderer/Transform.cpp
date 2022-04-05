@@ -1,4 +1,5 @@
 #include "Transform.h"
+#include "GameObject.h"
 
 Transform::Transform()
 {
@@ -193,8 +194,8 @@ Transform* Transform::GetChild(int index) const
 {
 	if (index < 0 || index >= children.size())
 		return nullptr;
-	else
-		return children[index];
+	
+	return children[index];
 }
 
 void Transform::AddChild(Transform* child)
@@ -207,10 +208,9 @@ void Transform::RemoveChild(int index)
 {
 	if (index < 0 || index >= children.size())
 		return;
-	else
-	{
-
-	}
+	
+	children[index]->
+	children.erase(children.begin() + index);
 }
 
 void Transform::RemoveChild(Transform* child)
@@ -220,6 +220,11 @@ void Transform::RemoveChild(Transform* child)
 bool Transform::IsParentOf(Transform* child)
 {
 	return false;
+}
+
+void Transform::SetAttachedGameObject(GameObject* gO)
+{
+	gameObject = gO;
 }
 
 void Transform::SetParent(Transform* parent)

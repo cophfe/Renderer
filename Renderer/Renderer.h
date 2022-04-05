@@ -74,12 +74,12 @@ private:
 		Vector3 luminance;
 		int : 32;
 		Vector3 direction;
-		float constant;
 		float linear;
 		float quadratic;
 		float minAngle;
 		float maxAngle;
 		int type = 0;
+		int : 32;
 		int : 32;
 		int : 32;
 		int : 32;
