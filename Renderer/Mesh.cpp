@@ -1,7 +1,8 @@
 #include "Mesh.h"
 #include <iostream>
+#include "Program.h"
 
-Mesh* Mesh::Init(MeshData& data, bool isStatic, bool storeMeshOnCPU)
+Mesh* Mesh::Init(MeshData* datas, uint16_t dataCount, bool isStatic, bool storeMeshOnCPU)
 {
 	if (created)
 	{
@@ -9,21 +10,50 @@ Mesh* Mesh::Init(MeshData& data, bool isStatic, bool storeMeshOnCPU)
 		throw msg;
 	}
 
-	indicesCount = data.indexCount;
-	verticesCount = data.vertexCount;
-	
+	submeshCount = dataCount;
+	submeshes = new SubMesh[submeshCount];
+
+	for (uint16_t i = 0; i < dataCount; i++)
+	{
+		InitSubMesh(datas[i], isStatic, i);
+
+		if (storeMeshOnCPU)
+			submeshes[i].data = new MeshData(datas[i]);
+		else
+			submeshes[i].data = nullptr;
+	}
+	created = true;
+
+	//register to program
+	Program::GetInstance()->GetRenderer().RegisterMesh(this);
+	return this;
+}
+
+Mesh* Mesh::InitNew(MeshData* datas, uint16_t dataCount, bool isStatic, bool storeMeshOnCPU)
+{
+	Mesh* mesh = new Mesh();
+	mesh->Init(datas, dataCount, isStatic, storeMeshOnCPU);
+	return mesh;
+}
+
+void Mesh::InitSubMesh(MeshData& data, bool isStatic, uint16_t index)
+{
+	SubMesh& submesh = submeshes[index];
+
+	submesh.indicesCount = data.indexCount;
+	submesh.verticesCount = data.vertexCount;
 	//set vertex array
-	glGenVertexArrays(1, &vertexArray);
-	glBindVertexArray(vertexArray);
+	glGenVertexArrays(1, &submesh.vertexArray);
+	glBindVertexArray(submesh.vertexArray);
 
 	//Setup vertex buffer
-	glGenBuffers(1, &vertexBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+	glGenBuffers(1, &submesh.vertexBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, submesh.vertexBuffer);
 
 
 	int bufferSize = data.GetBufferSize();
 	void* meshBuffer = data.GetBuffer();
-	
+
 	if (!meshBuffer)
 	{
 		throw "MeshData was empty, mesh could not be created";
@@ -39,84 +69,71 @@ Mesh* Mesh::Init(MeshData& data, bool isStatic, bool storeMeshOnCPU)
 	//Position
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(MeshData::Position), (void*)0);
 	glEnableVertexAttribArray(0);
-	size_t offset = verticesCount * sizeof(MeshData::Position);
+	size_t offset = submesh.verticesCount * sizeof(MeshData::Position);
 	//Normal
 #ifdef NormalIsVector3
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(MeshData::Normal), (void*)offset);
 	glEnableVertexAttribArray(1);
-	offset += verticesCount * sizeof(MeshData::Normal);
+	offset += submesh.verticesCount * sizeof(MeshData::Normal);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(MeshData::Normal), (void*)offset); //tangent
 	glEnableVertexAttribArray(2);
-	offset += verticesCount * sizeof(MeshData::Normal);
+	offset += submesh.verticesCount * sizeof(MeshData::Normal);
 	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(MeshData::Normal), (void*)offset); //bitangent
 	glEnableVertexAttribArray(3);
-	offset += verticesCount * sizeof(MeshData::Normal);
+	offset += submesh.verticesCount * sizeof(MeshData::Normal);
 #else
 	glVertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(MeshData::Normal), (void*)offset);
 	glEnableVertexAttribArray(1);
-	offset += verticesCount * sizeof(MeshData::Normal);
+	offset += mesh.verticesCount * sizeof(MeshData::Normal);
 	glVertexAttribPointer(2, 4, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(MeshData::Normal), (void*)offset);
 	glEnableVertexAttribArray(2);
-	offset += verticesCount * sizeof(MeshData::Normal);
+	offset += mesh.verticesCount * sizeof(MeshData::Normal);
 	glVertexAttribPointer(3, 4, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(MeshData::Normal), (void*)offset);
 	glEnableVertexAttribArray(3);
-	offset += verticesCount * sizeof(MeshData::Normal);
+	offset += mesh.verticesCount * sizeof(MeshData::Normal);
 #endif
-	
 
 	//TexCoord
 	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(MeshData::TexCoord), (void*)offset);
 	glEnableVertexAttribArray(4);
-	
+
 	//Now set up element buffer
-	if (indicesCount)
+	if (submesh.indicesCount)
 	{
-		glGenBuffers(1, &elementBuffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
+		glGenBuffers(1, &submesh.elementBuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, submesh.elementBuffer);
 
 		if (isStatic)
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesCount * sizeof(MeshData::Index), data.indices, GL_STATIC_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, submesh.indicesCount * sizeof(MeshData::Index), data.indices, GL_STATIC_DRAW);
 		else
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesCount * sizeof(MeshData::Index), data.indices, GL_DYNAMIC_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, submesh.indicesCount * sizeof(MeshData::Index), data.indices, GL_DYNAMIC_DRAW);
 	}
-
-	if (storeMeshOnCPU)
-		this->data = new MeshData(data);
-	else
-		this->data = nullptr;
-
-	created = true;
-
-	return this;
-}
-
-Mesh* Mesh::InitNew(MeshData& data, bool isStatic, bool storeMeshOnCPU)
-{
-	Mesh* mesh = new Mesh();
-	mesh->Init(data, isStatic, storeMeshOnCPU);
-	return mesh;
 }
 
 void Mesh::Render() const
 {
-	glBindVertexArray(vertexArray);
-	
-	if (indicesCount)
-		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
-	else
-		glDrawArrays(GL_TRIANGLES, 0, verticesCount);
+	for (uint16_t i = 0; i < submeshCount; i++)
+	{
+		auto& submesh = submeshes[i];
+		submesh.Render();
+
+	}
+}
+
+SubMesh* Mesh::GetSubMesh(uint16_t index) const
+{
+	if (index < 0 || index >= submeshCount)
+		return nullptr;
+
+	return &(submeshes[index]);
 }
 
 Mesh::Mesh(Mesh&& other) noexcept
 {
 	created = other.created;
-	vertexArray = other.vertexArray;
-	vertexBuffer = other.vertexBuffer;
-	elementBuffer = other.elementBuffer;
-	verticesCount = other.verticesCount;
-	indicesCount = other.indicesCount;
-	data = other.data;
-
+	submeshes = other.submeshes;
+	other.submeshes = nullptr;
+	other.submeshCount = 0;
 	other.created = false;
 }
 
@@ -124,22 +141,23 @@ Mesh& Mesh::operator=(Mesh&& other) noexcept
 {
 	if (created)
 	{
-		glDeleteVertexArrays(1, &vertexArray);
+		for (uint16_t i = 0; i < submeshCount; i++)
+		{
+			auto& submesh = submeshes[i];
+			glDeleteVertexArrays(1, &submesh.vertexArray);
 
-		//this will break if elementBuffer is not after vertexBuffer
-		if (indicesCount)
-			glDeleteBuffers(2, &vertexBuffer);
-		else
-			glDeleteBuffers(1, &vertexBuffer);
+			//this will break if elementBuffer is not after vertexBuffer
+			if (submesh.indicesCount)
+				glDeleteBuffers(2, &submesh.vertexBuffer);
+			else
+				glDeleteBuffers(1, &submesh.vertexBuffer);
+		}
 	}
-	created = other.created;
-	vertexArray = other.vertexArray;
-	vertexBuffer = other.vertexBuffer;
-	elementBuffer = other.elementBuffer;
-	verticesCount = other.verticesCount;
-	indicesCount = other.indicesCount;
-	data = other.data;
 
+	created = other.created;
+	submeshes = other.submeshes;
+	other.submeshes = nullptr;
+	other.submeshCount = 0;
 	other.created = false;
 
 	return *this;
@@ -149,13 +167,17 @@ Mesh::~Mesh()
 {
 	if (created)
 	{
-		glDeleteVertexArrays(1, &vertexArray);
+		for (uint16_t i = 0; i < submeshCount; i++)
+		{
+			auto& submesh = submeshes[i];
+			glDeleteVertexArrays(1, &submesh.vertexArray);
 
-		//this will break if elementBuffer is not after vertexBuffer
-		if (indicesCount)
-			glDeleteBuffers(2, &vertexBuffer);
-		else
-			glDeleteBuffers(1, &vertexBuffer);
+			//this will break if elementBuffer is not after vertexBuffer
+			if (submesh.indicesCount)
+				glDeleteBuffers(2, &submesh.vertexBuffer);
+			else
+				glDeleteBuffers(1, &submesh.vertexBuffer);
+		}
 
 		created = false;
 	}

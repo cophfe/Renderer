@@ -8,6 +8,7 @@
 #include "Object.h"
 #include "TextureManager.h"
 #include "UniformBuffer.h"
+#include "MeshRendererComponent.h"
 
 class Renderer
 {
@@ -17,15 +18,16 @@ public:
 	void RecompileShaders();
 
 	void UpdateUniformBuffers();
-	void Render(Object** objects, size_t count);
-	Material* CreateMaterial(Shader* vertex, Shader* fragment);
-	Shader* CreateShader(const char* path, Shader::Type type);
-	Mesh* CreateMesh(MeshData& data, bool isStatic = true, bool storeMeshOnCPU = false);
-
+	void Render();
+	
 	//note: these should definitely check if the things are already in the array
-	inline Material* AddMaterial(Material* mat) { materials.push_back(mat); return mat; }
-	inline Shader* AddShader(Shader* shader) { shaders.push_back(shader); return shader; }
-	inline Mesh* AddMesh(Mesh* mesh) { meshes.push_back(mesh); return mesh; }
+	//called by respective classes on init
+	Material* RegisterMaterial(Material* mat);
+	Shader* RegisterShader(Shader* shader);
+	Mesh* RegisterMesh(Mesh* mesh);
+
+	void RegisterRenderer(MeshRendererComponent* renderer);
+	void DeregisterRenderer(MeshRendererComponent* renderer);
 
 	inline Camera* GetMainCamera() { return mainCamera; }
 	inline GLFWwindow* GetWindow() const { return window; }
@@ -47,6 +49,7 @@ private:
 	std::vector<Shader*> shaders;
 	std::vector<Material*> materials;
 	std::vector<Mesh*> meshes;
+	std::vector<MeshRendererComponent*> renderers;
 
 	Camera* mainCamera;
 

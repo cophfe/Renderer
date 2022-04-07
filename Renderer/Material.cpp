@@ -1,4 +1,5 @@
 #include "Material.h"
+#include "Program.h"
 
 uint32_t Material::materialIDCounter = 0;
 GLuint Material::currentMaterial = -1;
@@ -38,6 +39,7 @@ Material* Material::Init(Shader& vertex, Shader& fragment)
 	materialID = materialIDCounter;
 	materialIDCounter++;
 
+	Program::GetInstance()->GetRenderer().RegisterMaterial(this);
 	return this;
 }
 

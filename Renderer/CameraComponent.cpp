@@ -1,6 +1,6 @@
 #include "CameraComponent.h"
 
-void CameraComponent::Init()
+void CameraComponent::Start()
 {
 }
 
@@ -22,5 +22,5 @@ void CameraComponent::Unload()
 
 Component* CameraComponent::Clone() const
 {
-    return nullptr;
+	return new CameraComponent(*this);
 }

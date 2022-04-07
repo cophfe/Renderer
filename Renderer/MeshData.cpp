@@ -116,7 +116,7 @@ void MeshData::SetVerticesData(const VertexData* vertices, Size count)
 	}
 }
 
-void MeshData::CalculateNormals(bool clockwise)
+void MeshData::CalculateNormalTangentBitangents(bool clockwise)
 {
 	float multiplier = clockwise ? -1 : 1;
 
@@ -146,16 +146,22 @@ void MeshData::CalculateNormals(bool clockwise)
 		Vector3 edgeFirst = positions[i2] - positions[i1];
 		Vector3 edgeSecond = positions[i3] - positions[i1];
 		//cross.z ^ - 1
-		Vector3 t = 1.0f / (dirUVFirst.x * dirUVSecond.y - dirUVSecond.x * dirUVFirst.y) *
-			Vector3(
-				dirUVSecond.y * edgeFirst.x - dirUVFirst.y * edgeSecond.x,
-				dirUVSecond.y * edgeFirst.y - dirUVFirst.y * edgeSecond.y,
-				dirUVSecond.y * edgeFirst.z - dirUVFirst.y * edgeSecond.z);
+		float uvMod = 1.0f / (dirUVFirst.x * dirUVSecond.y - dirUVSecond.x * dirUVFirst.y);
+		Vector3 t = uvMod *
+			Vector3(	dirUVSecond.y * edgeFirst.x - dirUVFirst.y * edgeSecond.x,
+						dirUVSecond.y * edgeFirst.y - dirUVFirst.y * edgeSecond.y,
+						dirUVSecond.y * edgeFirst.z - dirUVFirst.y * edgeSecond.z);
 		tangents[i1] = t;
 		tangents[i2] = t;
 		tangents[i3] = t;
 
-		Vector3 b = glm::cross(n, t);
+		//the cross bitangent is incorrect in the case of distorted uvs
+		//Vector3 b = glm::cross(n, t);
+		Vector3 b = uvMod *
+			Vector3(-dirUVSecond.x * edgeFirst.x + dirUVFirst.x * edgeSecond.x,
+					-dirUVSecond.x * edgeFirst.y + dirUVFirst.x * edgeSecond.y,
+					-dirUVSecond.x * edgeFirst.z + dirUVFirst.x * edgeSecond.z);
+		
 		bitangents[i1] = b;
 		bitangents[i2] = b;
 		bitangents[i3] = b;

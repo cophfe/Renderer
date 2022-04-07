@@ -130,39 +130,48 @@ void Renderer::UpdateUniformBuffers()
 	lightingBuffer.BufferSubData(0, sizeof(lighting), &lighting);
 }
 
-void Renderer::Render(Object** objects, size_t count)
+void Renderer::Render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	mainCamera->UpdateCamera();
 	//glUniformMatrix4fv(materials[0]->GetUniformID("ViewProjectionMatrix"), 1, GL_FALSE, (GLfloat*)&(camera->GetViewProjectionMatrix()[0]));
 
-	for (size_t i = 0; i < count; i++)
+	for (auto meshRenderer : renderers)
 	{
-		objects[i]->Render();
+		meshRenderer->Render();
 	}
 
 	glfwSwapBuffers(window);
 }
 
-Material* Renderer::CreateMaterial(Shader* vertex, Shader* fragment)
+Material* Renderer::RegisterMaterial(Material* mat)
 {
-	Material* material = Material::InitNew(*vertex, *fragment);
-	materials.push_back(material);
-	return material;
+	materials.push_back(mat);
+	return mat;
 }
 
-Shader* Renderer::CreateShader(const char* path, Shader::Type type)
+Shader* Renderer::RegisterShader(Shader* shader)
 {
-	Shader* shader = Shader::InitNew(path, type);
-	shaders.push_back(shader);
+	shaders.push_back(shader); 
 	return shader;
 }
 
-Mesh* Renderer::CreateMesh(MeshData& data, bool isStatic, bool storeMeshOnCPU)
+Mesh* Renderer::RegisterMesh(Mesh* mesh)
 {
-	Mesh* mesh = Mesh::InitNew(data, isStatic, storeMeshOnCPU);
-	meshes.push_back(mesh);
+	meshes.push_back(mesh); 
 	return mesh;
+}
+
+void Renderer::RegisterRenderer(MeshRendererComponent* renderer)
+{
+	renderers.push_back(renderer);
+}
+
+void Renderer::DeregisterRenderer(MeshRendererComponent* renderer)
+{
+	auto position = std::find(renderers.begin(), renderers.end(), &renderer);
+	if (position != renderers.end())
+		renderers.erase(position);
 }
 

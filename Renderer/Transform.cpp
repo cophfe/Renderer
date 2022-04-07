@@ -1,5 +1,6 @@
 #include "Transform.h"
 #include "GameObject.h"
+#include "Program.h"
 
 Transform::Transform()
 {
@@ -7,7 +8,20 @@ Transform::Transform()
 	rotation = glm::quat_identity<float, glm::qualifier::defaultp>(); 
 	position = Vector3(0, 0, 0); 
 	UpdateLocalMatrix();
-};
+
+	parent = nullptr;
+	Program::GetInstance()->AddChild(*this);
+}
+
+Transform::Transform(Transform& parent)
+{
+	scale = Vector3(1, 1, 1);
+	rotation = glm::quat_identity<float, glm::qualifier::defaultp>();
+	position = Vector3(0, 0, 0);
+	UpdateLocalMatrix();
+
+	parent.AddChild(*this);
+}
 
 #pragma region Local
 void Transform::SetLocalPosition(const Vector3& position)
@@ -82,7 +96,7 @@ void Transform::UpdateGlobalMatrix()
 	else
 		globalMatrix = localMatrix;
 
-	for (auto& child : children)
+	for (auto child : children)
 	{
 		child->UpdateGlobalMatrix();
 	}
@@ -198,10 +212,19 @@ Transform* Transform::GetChild(int index) const
 	return children[index];
 }
 
-void Transform::AddChild(Transform* child)
+void Transform::AddChild(Transform& child)
 {
-	child->SetParent(this);
+	if (child.parent)
+	{
+		auto position = std::find(children.begin(), children.end(), &child);
+		if (position != children.end())
+			children.erase(position);
+	}
+	else
+		Program::GetInstance()->RemoveChild(child);
 
+	child.parent = this;
+	children.push_back(&child);
 }
 
 void Transform::RemoveChild(int index)
@@ -209,25 +232,31 @@ void Transform::RemoveChild(int index)
 	if (index < 0 || index >= children.size())
 		return;
 	
-	children[index]->
 	children.erase(children.begin() + index);
+	
+	children[index]->parent = nullptr;
+	Program::GetInstance()->AddChild(*children[index]);
 }
 
-void Transform::RemoveChild(Transform* child)
+void Transform::RemoveChild(Transform& child)
 {
+	auto position = std::find(children.begin(), children.end(), &child);
+	if (position != children.end())
+	{
+		children.erase(position);
+
+		child.parent = nullptr;
+		Program::GetInstance()->AddChild(child);
+	}
 }
 
-bool Transform::IsParentOf(Transform* child)
+bool Transform::IsParentOf(Transform& child)
 {
-	return false;
+	return child.parent == this;
 }
 
 void Transform::SetAttachedGameObject(GameObject* gO)
 {
 	gameObject = gO;
-}
-
-void Transform::SetParent(Transform* parent)
-{
 }
 #pragma endregion

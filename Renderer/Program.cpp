@@ -1,5 +1,6 @@
 #include "Program.h"
 #include "MeshPrimitive.h"
+#include "MeshRendererComponent.h"
 
 Program* Program::instance = nullptr;
 
@@ -23,17 +24,25 @@ void Program::Run()
 	Cleanup();
 }
 
-Object* Program::CreateObject(Mesh* mesh, Material* material)
+void Program::RegisterGameObject(GameObject* gameObject)
 {
-	Object* object = new Object(mesh, material);
-	objects.push_back(object);
-	return object;
+	gameObjects.push_back(gameObject);
 }
 
-void Program::AddObject(GameObject* object)
+void Program::AddChild(Transform& child)
 {
-	if (object->GetTransform().GetParent() == nullptr)
-		children.push_back(object);
+	if (child.GetParent() == nullptr)
+		children.push_back(&child);
+}
+
+void Program::RemoveChild(Transform& child)
+{
+	if (child.GetParent() == nullptr)
+	{
+		auto position = std::find(children.begin(), children.end(), &child);
+		if (position != children.end())
+			children.erase(position);
+	}
 }
 
 void Program::Init()
@@ -50,70 +59,49 @@ void Program::Init()
 
 	auto& tM = renderer.GetTextureManager();
 
-	Shader* fragment = renderer.CreateShader("Shaders/Default.frag", Shader::Type::Fragment);
-	Shader* vertex = renderer.CreateShader("Shaders/Default.vert", Shader::Type::Vertex);
-	Material* defaultMaterial = renderer.CreateMaterial(vertex, fragment);
+	Shader* fragment = Shader::InitNew("Shaders/Default.frag", Shader::Type::Fragment);
+	Shader* vertex = Shader::InitNew("Shaders/Default.vert", Shader::Type::Vertex);
+	Material* defaultMaterial = Material::InitNew(*vertex, *fragment);
 	defaultMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("soulspear_diffuse.tga"));
 	defaultMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("soulspear_normal.tga"));
 
 	MeshData data;
 	MeshPrimitive::SetCube(data);
 
-	Material* metalMaterial = renderer.CreateMaterial(vertex, fragment);
+	Material* metalMaterial = Material::InitNew(*vertex, *fragment);
 	metalMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("metal_diffuse.jpg"));
 	metalMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("metal_normal.jpg"));
-	Mesh* mesh = renderer.CreateMesh(data);
+	Mesh* mesh = Mesh::InitNew(&data, 1);
 
 	for (size_t i = 1; i < 30; i++)
 	{
-		CreateObject(mesh, defaultMaterial)->GetTransform().SetLocalPosition(Vector3(4, 0, -(1.5 * i)));
-
+		auto gO = GameObject::Create();
+		MeshRendererComponent* component = gO->AddComponent<MeshRendererComponent>();
+		component->Init(mesh, metalMaterial);
+		gO->GetTransform().SetLocalPosition(Vector3(4, 0, -(1.5 * i)));
 	}
-	//other object
-	Material* otherMaterial = renderer.CreateMaterial(vertex, fragment);
-	otherMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("pixel.png"));
-	otherMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("normal.png"));
 	
-	CreateObject(mesh, defaultMaterial)->GetTransform();
+	//make soulspear
+	int submeshCount;
+	auto* datas = MeshBuilder::LoadMeshData(submeshCount, "Models/soulspear.obj");
+	mesh = Mesh::InitNew(datas, submeshCount);
+	MeshBuilder::FreeMeshArray(datas, submeshCount);
 
-	int meshCount;
-	MeshData* datas = MeshBuilder::LoadMeshData(meshCount, "Models/monkey.obj");
+	Material* soulMaterial = Material::InitNew(*vertex, *fragment);
+	soulMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("soulspear_diffuse.tga"));
+	soulMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("soulspear_normal.tga"));
+	soulMaterial->SetTextureSampler("_SpecularMap", tM.LoadTexture("soulspear_specular.tga"));
 
-	for (size_t i = 0; i < meshCount; i++)
-	{
-		mesh = renderer.CreateMesh(datas[i]);
-		auto& transform = CreateObject(mesh, otherMaterial)->GetTransform();
-		transform.SetLocalPosition(Vector3(-5, 2 * i, -4));
-	}
-	MeshBuilder::FreeMeshArray(datas, meshCount);
+	auto soulSpear = GameObject::Create();
+	MeshRendererComponent* soulSpearRenderer = soulSpear->AddComponent<MeshRendererComponent>();
+	soulSpearRenderer->Init(mesh, soulMaterial);
+	soulSpear->GetTransform().SetLocalPosition(Vector3(-2, -3, -10));
 
-	datas = MeshBuilder::LoadMeshData(meshCount, "Models/duck.obj");
 
-	for (size_t i = 0; i < meshCount; i++)
-	{
-		mesh = renderer.CreateMesh(datas[i]);
-		auto& transform = CreateObject(mesh, otherMaterial)->GetTransform();
-		transform.SetLocalPosition(Vector3(-5, 2, -4));
-		transform.LocalRotate(glm::radians(-90.0f), Vector3(1, 0, 0));
-		transform.SetLocalScale(0.2f);
-	}
-	MeshBuilder::FreeMeshArray(datas, meshCount);
 	
-	datas = MeshBuilder::LoadMeshData(meshCount, "Models/soulspear.obj");
 
-	Material* otherOtherMaterial = renderer.CreateMaterial(vertex, fragment);
-	otherOtherMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("soulspear_diffuse.tga"));
-	otherOtherMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("soulspear_normal.tga"));
-	otherOtherMaterial->SetTextureSampler("_SpecularMap", tM.LoadTexture("soulspear_specular.tga"));
+	
 
-	for (size_t i = 0; i < meshCount; i++)
-	{
-		mesh = renderer.CreateMesh(datas[i]);
-		auto& transform = CreateObject(mesh, otherOtherMaterial)->GetTransform();
-		transform.SetLocalPosition(Vector3(0, -3, -10));
-		transform.SetLocalScale(1.0f);
-	}
-	MeshBuilder::FreeMeshArray(datas, meshCount);
 
 	//TEMP - SET MATERIAL INFORMATION
 	auto& materials = renderer.GetMaterials();
@@ -191,27 +179,24 @@ void Program::Loop()
 void Program::Render()
 {
 	renderer.UpdateUniformBuffers();
-	renderer.Render(objects.data(), objects.size());
+	renderer.Render();
 }
 
 void Program::Update()
 {
-	size_t size = objects.size();
-	float offset = (2.0f * glm::pi<float>()) / size;
-
-	for (size_t i = 0; i < size; i++)
+	for (auto gameObject : gameObjects)
 	{
-		//objects[i]->GetTransform().LocalRotate(glm::radians(10.0f * deltaTime), Vector3(0,1,0));
+		gameObject->Update();
 	}
 }
 
 void Program::Cleanup()
 {
-	for (size_t i = 0; i < objects.size(); i++)
+	for (size_t i = 0; i < gameObjects.size(); i++)
 	{
-		delete objects[i];
+		delete gameObjects[i];
 	}
-	objects.clear();
+	gameObjects.clear();
 
 	renderer.Cleanup();
 }

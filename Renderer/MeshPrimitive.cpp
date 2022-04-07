@@ -57,7 +57,7 @@ void MeshPrimitive::SetCube(MeshData& data, float radius)
 	data.SetVerticesData(vertices, 24);
 	data.SetIndices(indices, 36);
 	
-	data.CalculateNormals(false);
+	data.CalculateNormalTangentBitangents(false);
 }
 
 void MeshPrimitive::SetCircle(MeshData& data, float radius)

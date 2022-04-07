@@ -9,14 +9,15 @@ class Component
 public:
 	virtual Component* Clone() const = 0;
 
-	void SetEnabled(bool enabled);
+	void SetEnabled(bool enabled, bool softset = false);
 	inline bool GetEnabled() const { return enabled; }
 	inline GameObject* GetGameObject() const { return gameObject; }
+	inline Transform& GetTransform() { return gameObject->GetTransform(); }
 
 protected:
 	friend GameObject;
 
-	virtual void Init() = 0;
+	virtual void Start() = 0;
 	virtual void Update() = 0;
 	virtual void OnDisable() = 0;
 	virtual void OnEnable() = 0;

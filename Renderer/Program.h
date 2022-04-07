@@ -23,9 +23,11 @@ public:
 	inline Renderer& GetRenderer() { return renderer; }
 	inline float GetDeltaTime() { return deltaTime; }
 	inline double GetDeltaTimeDouble() { return deltaTime; }
-	Object* CreateObject(Mesh* mesh, Material* material);
 
-	void AddObject(GameObject* object);
+	void RegisterGameObject(GameObject* gameObject);
+	void AddChild(Transform& child);
+	void RemoveChild(Transform& child);
+
 private:
 	Program() = default;
 	Program(const Program& other) = delete;
@@ -61,8 +63,9 @@ private:
 #pragma endregion
 
 	Renderer renderer;
-	std::vector<Object*> objects;
-	std::vector<GameObject*> children;
+	
+	std::vector<GameObject*> gameObjects;
+	std::vector<Transform*> children;
 
 	double deltaTime;
 	double lastTime;

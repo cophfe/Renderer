@@ -8,7 +8,7 @@ class Transform
 {
 public:
 	Transform();
-
+	Transform(Transform& parent);
 	//Local
 	void SetLocalPosition(const Vector3& position);
 	void SetLocalRotation(const Quaternion& rotation);
@@ -62,17 +62,16 @@ public:
 	Transform* GetParent() const { return parent; }
 	inline const std::vector<Transform*>& GetChildArray() { return children; }
 
-	void AddChild(Transform* child);
+	void AddChild(Transform& child);
 	void RemoveChild(int index);
-	void RemoveChild(Transform* child);
+	void RemoveChild(Transform& child);
 
-	bool IsParentOf(Transform* child);
+	bool IsParentOf(Transform& child);
 	
 private:
 	friend GameObject;
 	void SetAttachedGameObject(GameObject* gO);
 
-	void SetParent(Transform* parent);
 	GameObject* gameObject;
 	//hierarchy
 	Transform* parent;

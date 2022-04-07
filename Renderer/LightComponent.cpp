@@ -81,7 +81,7 @@ const LightDataStruct& LightComponent::GetLightData()
 	return lightData;
 }
 
-void LightComponent::Init()
+void LightComponent::Start()
 {
 
 }

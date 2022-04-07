@@ -1,8 +1,14 @@
 #include "Component.h"
 
-void Component::SetEnabled(bool enabled)
+//softset is true when the gameobject is disabled/enabled but the component itself isn't
+void Component::SetEnabled(bool enabled, bool softset)
 {
-	this->enabled = enabled;
+	if (enabled == this->enabled)
+		return;
+
+	if (!softset)
+		this->enabled = enabled;
+	
 	if (enabled)
 	{
 		OnEnable();
@@ -10,7 +16,7 @@ void Component::SetEnabled(bool enabled)
 		if (!initiated)
 		{
 			initiated = true;
-			Init();
+			Start();
 		}
 	}
 	else

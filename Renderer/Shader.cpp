@@ -1,4 +1,5 @@
 #include "Shader.h"
+#include "Program.h"
 
 Shader* Shader::Init(const char* path, Type type)
 {
@@ -16,6 +17,8 @@ Shader* Shader::Init(const char* path, Type type)
 	lastTime = std::filesystem::last_write_time(path);
 	Compile(false);
 	loaded = true;
+
+	Program::GetInstance()->GetRenderer().RegisterShader(this);
 	return this;
 }
 

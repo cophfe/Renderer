@@ -75,7 +75,7 @@ MeshData* MeshBuilder::LoadMesh(int& meshCount, const aiScene* scene)
 			for (size_t j = 0; j  < vCount; j ++)
 			{
 				//this ignores the last component of the 3D texCoord, cuz we only use 2D texCoords
-				mD.texCoords[j] = Vector2(mesh.mTextureCoords[0][j].x, mesh.mTextureCoords[0][j].y);
+				mD.texCoords[j] = Vector2(mesh.mTextureCoords[0][j].x, -mesh.mTextureCoords[0][j].y);
 			}
 			
 		}

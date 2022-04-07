@@ -5,7 +5,7 @@ class CameraComponent : public Component
 {
 private:
 	// Inherited via Component
-	virtual void Init() override;
+	virtual void Start() override;
 	virtual void Update() override;
 	virtual void OnDisable() override;
 	virtual void OnEnable() override;

@@ -2,18 +2,20 @@
 #include <vector>
 #include "MeshData.h"
 #include "Graphics.h"
+#include "SubMesh.h"
 
 class Mesh
 {
 public:
 	Mesh() { created = false; }
 
-	Mesh* Init(MeshData& data, bool isStatic = true, bool storeMeshOnCPU = false); 
-	static Mesh* InitNew(MeshData& data, bool isStatic = true, bool storeMeshOnCPU = false);
+	Mesh* Init(MeshData* datas, uint16_t dataCount, bool isStatic = true, bool storeMeshOnCPU = false);
+	static Mesh* InitNew(MeshData* datas, uint16_t dataCount, bool isStatic = true, bool storeMeshOnCPU = false);
 	void Render() const; //shader program and transform should be set up before this is called. 
-
-	inline MeshData* GetStoredMeshData() { return data; } //cam be null
 	
+	SubMesh* GetSubMesh(uint16_t index) const;
+	inline const SubMesh* GetSubmeshArray() const { return submeshes; }
+	inline uint16_t GetSubMeshCount() const { return submeshCount; }
 	Mesh(Mesh&& other) noexcept;
 	Mesh& operator= (Mesh&& other) noexcept;
 	~Mesh();
@@ -21,18 +23,10 @@ public:
 	Mesh& operator= (const Mesh& other) = delete;
 
 private:
+	void InitSubMesh(MeshData& data, bool isStatic, uint16_t index);
 	
-	GLuint vertexArray;
-	//vertex info is stored in one big array, but is not interleaved. this is not good for dynamic meshes
-	GLuint vertexBuffer; 
-	GLuint elementBuffer;
-
-	//I'm not sure if I should even keep this in cpu memory or not??
-	//for dynamic meshes it may be useful, but also maybe not. for static meshes it is straight up useless, i assume. madre de dios este es muy confuso, no estoy inteligente
-	MeshData* data;
-	uint32_t verticesCount;
-	uint32_t indicesCount;
-	
+	SubMesh* submeshes;
+	uint16_t submeshCount;
 	bool created;
 };
 

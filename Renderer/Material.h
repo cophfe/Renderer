@@ -87,6 +87,13 @@ private:
 		GLuint samplerID;
 	};
 	std::vector<TextureData> textures;
+	//needs to store uniform values as well
+	/*struct UniformData
+	{
+		T value;
+		GLuint id;
+	};
+	std::vector<UniformData> uniforms;*/
 
 	Shader* vertex;
 	Shader* fragment;

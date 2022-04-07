@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include "Transform.h"
 
 class Component;
 class Transform;
@@ -8,7 +7,9 @@ class Transform;
 class GameObject
 {
 public:
-	void Init();
+	static GameObject* Create(Transform* parent = nullptr);
+
+	void Start();
 	void Update();
 	void Unload();
 	void SetEnabled(bool enabled);
@@ -28,7 +29,6 @@ public:
 	inline bool GetEnabled() { return enabled; }
 	Transform& GetTransform() { return transform; }
 
-	GameObject();
 	~GameObject();
 	GameObject(const GameObject& other);
 	GameObject& operator=(const GameObject& other);
@@ -37,7 +37,10 @@ public:
 private:
 	static unsigned int idCounter;
 	unsigned int id;
-	
+
+	GameObject() = default;
+	GameObject* Copy();
+
 	bool enabled;
 	std::vector<Component*> components;
 	Transform transform;

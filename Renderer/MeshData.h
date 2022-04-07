@@ -51,7 +51,7 @@ struct MeshData
 	void SetIndices(const Index* indices, Size count);
 	void SetVerticesData(const VertexData* vertices, Size count);
 	
-	void CalculateNormals(bool clockwise);
+	void CalculateNormalTangentBitangents(bool clockwise);
 
 #ifndef NormalIsVector3
 	static Normal PackNormal(const Vector3& normal);
@@ -85,6 +85,5 @@ struct MeshData
 	MeshData& operator= (const MeshData& other);
 
 private:
-	Vector3 CalculateTangent(size_t index);
 };
 
