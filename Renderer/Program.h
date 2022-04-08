@@ -4,7 +4,6 @@
 #include "Shader.h"
 #include "Material.h"
 #include "Mesh.h"
-#include "Object.h"
 #include "Camera.h"
 #include "UniformBuffer.h"
 #include "Renderer.h"
@@ -25,6 +24,7 @@ public:
 	inline double GetDeltaTimeDouble() { return deltaTime; }
 
 	void RegisterGameObject(GameObject* gameObject);
+	void DeregisterGameObject(GameObject* gameObject);
 	void AddChild(Transform& child);
 	void RemoveChild(Transform& child);
 
@@ -64,8 +64,8 @@ private:
 
 	Renderer renderer;
 	
-	std::vector<GameObject*> gameObjects;
-	std::vector<Transform*> children;
+	std::vector<GameObject*> gameObjects = std::vector<GameObject*>();;
+	std::vector<Transform*> children = std::vector<Transform*>();
 
 	double deltaTime;
 	double lastTime;

@@ -5,10 +5,11 @@
 #include "Material.h"
 #include "Mesh.h"
 #include "Camera.h"
-#include "Object.h"
 #include "TextureManager.h"
 #include "UniformBuffer.h"
 #include "MeshRendererComponent.h"
+#include "LightComponent.h"
+#include "CameraComponent.h"
 
 class Renderer
 {
@@ -28,8 +29,17 @@ public:
 
 	void RegisterRenderer(MeshRendererComponent* renderer);
 	void DeregisterRenderer(MeshRendererComponent* renderer);
+	
+	void RegisterLight(LightComponent* light);
+	void DeregisterLight(LightComponent* light);
 
-	inline Camera* GetMainCamera() { return mainCamera; }
+	void RegisterCamera(CameraComponent* camera);
+	void DeregisterCamera(CameraComponent* camera);
+
+	void UpdateLights();
+	void FindMainCamera();
+
+	inline CameraComponent* GetMainCamera() { return cameras.size() > 0 ? cameras[0] : nullptr; }
 	inline GLFWwindow* GetWindow() const { return window; }
 	inline TextureManager& GetTextureManager() { return textureManager; }
 	inline std::vector<Material*>& GetMaterials() { return materials; }
@@ -41,6 +51,7 @@ public:
 	Vector4 ambientColour = Vector4(0.05f, 0.05f, 0.05f, 1.0f);
 
 private:
+
 	GLFWwindow* window;
 
 	const float shaderRecompileTime = 1;
@@ -49,9 +60,11 @@ private:
 	std::vector<Shader*> shaders;
 	std::vector<Material*> materials;
 	std::vector<Mesh*> meshes;
-	std::vector<MeshRendererComponent*> renderers;
 
-	Camera* mainCamera;
+	//components used for rendering
+	std::vector<MeshRendererComponent*> renderers;
+	std::vector<LightComponent*> lights;
+	std::vector<CameraComponent*> cameras;
 
 	UniformBuffer timingBuffer;
 	UniformBuffer cameraBuffer;
@@ -70,27 +83,13 @@ private:
 		float DeltaTime;
 	};
 
-	struct LightDataStruct //aligned to 16
-	{
-		Vector3 position;
-		int : 32;
-		Vector3 luminance;
-		int : 32;
-		Vector3 direction;
-		float linear;
-		float quadratic;
-		float minAngle;
-		float maxAngle;
-		int type = 0;
-		int : 32;
-		int : 32;
-		int : 32;
-		int : 32;
-	};
 	struct LightingBufferStruct {
 		LightDataStruct lights[8];
 
 		Vector4 ambientColour;
 	};
+
+	//uniform buffers (if stored)
+	LightingBufferStruct lightingBufferData;
 };
 

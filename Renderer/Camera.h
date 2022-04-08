@@ -2,7 +2,6 @@
 #include "Math.h"
 #include "Graphics.h"
 #include "Transform.h"
-#include "Object.h"
 
 class Camera
 {

@@ -17,6 +17,10 @@ public:
 protected:
 	friend GameObject;
 
+	Component() = default;
+	Component(const Component& other) = default;
+	Component& operator=(const Component& other) = default;
+
 	virtual void Start() = 0;
 	virtual void Update() = 0;
 	virtual void OnDisable() = 0;

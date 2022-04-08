@@ -11,13 +11,13 @@ void Component::SetEnabled(bool enabled, bool softset)
 	
 	if (enabled)
 	{
-		OnEnable();
-	
 		if (!initiated)
 		{
 			initiated = true;
 			Start();
 		}
+
+		OnEnable();
 	}
 	else
 		OnDisable();

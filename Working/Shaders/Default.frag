@@ -118,7 +118,7 @@ void main()
     vec3 lightPower = vec3(0);
     lightPower += ambient;
     
-    for(int i = 0; i < 1; i++) //CHANGE TO LIGHT_COUNT
+    for(int i = 0; i < LIGHT_COUNT; i++) //CHANGE TO LIGHT_COUNT
     {
         switch(_Lights[i].type)
         {

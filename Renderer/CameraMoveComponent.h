@@ -1,15 +1,10 @@
 #pragma once
 #include "Component.h"
-#include "Mesh.h"
-#include "Material.h"
-#include "Camera.h"
 
-class MeshRendererComponent :
-    public Component
+class CameraMoveComponent : public Component
 {
 public:
-	void Init(Mesh* mesh, Material* material);
-	void Render() const;
+	void Init(float moveSpeed, float turnSpeed);
 private:
 	// Inherited via Component
 	virtual Component* Clone() const override;
@@ -18,11 +13,5 @@ private:
 	virtual void OnDisable() override;
 	virtual void OnEnable() override;
 	virtual void Unload() override;
-
-	Mesh* mesh;
-	Material* material;
-
-	GLuint MVPMatrix;
-	GLuint ModelMatrix;
 };
 

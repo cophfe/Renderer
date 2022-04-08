@@ -1,6 +1,15 @@
 #include "MeshBuilder.h"
 #include "Program.h"
 
+Mesh* MeshBuilder::LoadMeshFromPath(const char* path)
+{
+	int submeshCount;
+	auto* datas = MeshBuilder::LoadMeshData(submeshCount, path);
+	Mesh* mesh = Mesh::InitNew(datas, submeshCount);
+	MeshBuilder::FreeMeshArray(datas, submeshCount);
+	return mesh;
+}
+
 MeshData* MeshBuilder::LoadMeshData(int& meshCount, const char* path)
 {
 	Assimp::Importer importer;

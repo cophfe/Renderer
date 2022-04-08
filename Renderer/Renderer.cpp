@@ -36,10 +36,6 @@ void Renderer::Init(const char* texturePath)
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
-	Vector2Int size;
-	glfwGetWindowSize(window, &size.x, &size.y);
-	mainCamera = new Camera(glm::radians(65.0f), size.x / (float)size.y, 0.001, 100);
-
 	textureManager.Init(texturePath, 0, TextureFiltering::Linear, TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode::Wrap);
 
 	//init uniform buffers
@@ -69,6 +65,8 @@ void Renderer::Cleanup()
 	shaders.clear();
 
 	textureManager.Unload();
+
+	renderers.clear();
 	glfwTerminate();
 }
 
@@ -96,48 +94,44 @@ void Renderer::RecompileShaders()
 
 void Renderer::UpdateUniformBuffers()
 {
-	CameraBufferStruct cameraData;
-	cameraData.ProjectionMatrix = mainCamera->GetProjectionMatrix();
-	cameraData.ViewMatrix = mainCamera->GetViewMatrix();
-	cameraData.ViewProjectionMatrix = mainCamera->GetViewProjectionMatrix();
-	cameraData.InverseViewMatrix = glm::inverse(mainCamera->GetViewMatrix());
-	cameraData.cameraPosition = Vector4(mainCamera->GetTransform().GetLocalPosition(), 1.0f);
-	cameraBuffer.BufferSubData(0, sizeof(cameraData), &cameraData);
+	if (cameras.size() > 0)
+	{
+		CameraComponent* mainCamera = cameras[0];
+		CameraBufferStruct cameraData;
+
+		cameraData.ProjectionMatrix = mainCamera->GetProjectionMatrix();
+		cameraData.ViewMatrix = mainCamera->GetViewMatrix();
+		cameraData.ViewProjectionMatrix = mainCamera->GetViewProjectionMatrix();
+		cameraData.InverseViewMatrix = glm::inverse(mainCamera->GetViewMatrix());
+		cameraData.cameraPosition = Vector4(mainCamera->GetTransform().GetLocalPosition(), 1.0f);
+
+		cameraBuffer.BufferSubData(0, sizeof(cameraData), &cameraData);
+	}
+
+	for (size_t i = 0; i < lights.size() && i < 8; i++)
+	{
+		lightingBufferData.lights[i].direction = lights[i]->GetTransform().GetForward();
+		lightingBufferData.lights[i].position = lights[i]->GetTransform().GetPosition();
+	}
+	lightingBuffer.BufferSubData(0, sizeof(lightingBufferData), &lightingBufferData);
 
 	TimingBufferStruct time;
+	
 	time.Time = glfwGetTime();
 	time.DeltaTime = Program::GetInstance()->GetDeltaTime();
+
 	timingBuffer.BufferSubData(0, sizeof(time), &time);
-
-	LightingBufferStruct lighting;
-	lighting.ambientColour = ambientColour;
-
-	//TEMP- SET FIRST LIGHTING THING TO A CAMERA LIGHT
-	LightDataStruct light;
-	light.position = mainCamera->GetTransform().GetLocalPosition();
-	light.direction = mainCamera->GetTransform().GetLocalForward();
-	light.luminance = Vector3(0.8f, 0.8f, 1.0f);
-	light.linear = 0.2f;
-	light.quadratic = 0.07f;
-	light.minAngle = glm::cos(glm::radians(30.0f));
-	light.maxAngle = glm::cos(glm::radians(40.0f));
-	light.type = 2;
-	lighting.lights[0] = light;
-	
-	memset(lighting.lights + 1, 0, sizeof(LightDataStruct) * 7);
-	//std::cout << "x: " << light.direction.x << ", y: " << light.direction.y << ", z: " << light.direction.z << std::endl;
-	//
-	lightingBuffer.BufferSubData(0, sizeof(lighting), &lighting);
 }
 
 void Renderer::Render()
 {
+	if (cameras.size() <= 0)
+		return;
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	cameras[0]->UpdateCamera();
 
-	mainCamera->UpdateCamera();
-	//glUniformMatrix4fv(materials[0]->GetUniformID("ViewProjectionMatrix"), 1, GL_FALSE, (GLfloat*)&(camera->GetViewProjectionMatrix()[0]));
-
-	for (auto meshRenderer : renderers)
+	for (MeshRendererComponent* meshRenderer : renderers)
 	{
 		meshRenderer->Render();
 	}
@@ -170,8 +164,78 @@ void Renderer::RegisterRenderer(MeshRendererComponent* renderer)
 
 void Renderer::DeregisterRenderer(MeshRendererComponent* renderer)
 {
-	auto position = std::find(renderers.begin(), renderers.end(), &renderer);
+	std::vector<MeshRendererComponent*>::iterator position = std::find(renderers.begin(), renderers.end(), renderer);
 	if (position != renderers.end())
 		renderers.erase(position);
+}
+
+void Renderer::RegisterLight(LightComponent* light)
+{
+	lights.push_back(light);
+
+	UpdateLights();
+}
+
+void Renderer::DeregisterLight(LightComponent* light)
+{
+	std::vector<LightComponent*>::iterator position = std::find(lights.begin(), lights.end(), light);
+	if (position != lights.end())
+		lights.erase(position);
+	
+	UpdateLights();
+}
+
+void Renderer::RegisterCamera(CameraComponent* camera)
+{
+	cameras.push_back(camera);
+	
+	FindMainCamera();
+}
+
+void Renderer::DeregisterCamera(CameraComponent* camera)
+{
+	std::vector<CameraComponent*>::iterator position = std::find(cameras.begin(), cameras.end(), camera);
+	if (position != cameras.end())
+		cameras.erase(position);
+	
+	FindMainCamera();
+}
+
+void Renderer::UpdateLights()
+{
+	//update light buffer
+	for (size_t i = 0; i < lights.size() && i < 8; i++)
+	{
+		lightingBufferData.lights[i] = lights[i]->GetLightData();
+	}
+	
+	//if (lights.size() < 8)
+	//{
+	//	memset(lightingBufferData.lights + lights.size() - 1, 0, sizeof(LightDataStruct) * 8 - lights.size());
+	//}
+
+	lightingBufferData.ambientColour = ambientColour;
+	lightingBuffer.BufferSubData(0, sizeof(lightingBufferData), &lightingBufferData);
+}
+
+void Renderer::FindMainCamera()
+{
+	if (cameras.size() == 0)
+		return;
+
+	int priority = cameras[0]->GetPriority();
+
+	for (size_t i = 1; i < cameras.size(); i++)
+	{
+		int newP = cameras[i]->GetPriority();
+		if (newP > priority)
+		{
+			priority = newP;
+			
+			CameraComponent* cache = cameras[0];
+			cameras[0] = cameras[i];
+			cameras[i] = cache;
+		}
+	}
 }
 

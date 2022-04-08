@@ -178,7 +178,7 @@ Mesh::~Mesh()
 			else
 				glDeleteBuffers(1, &submesh.vertexBuffer);
 		}
-
+		delete[] submeshes;
 		created = false;
 	}
 }

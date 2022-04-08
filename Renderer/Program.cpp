@@ -29,6 +29,13 @@ void Program::RegisterGameObject(GameObject* gameObject)
 	gameObjects.push_back(gameObject);
 }
 
+void Program::DeregisterGameObject(GameObject* gameObject)
+{
+	auto position = std::find(gameObjects.begin(), gameObjects.end(), gameObject);
+	if (position != gameObjects.end())
+		gameObjects.erase(position);
+}
+
 void Program::AddChild(Transform& child)
 {
 	if (child.GetParent() == nullptr)
@@ -71,8 +78,8 @@ void Program::Init()
 	Material* metalMaterial = Material::InitNew(*vertex, *fragment);
 	metalMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("metal_diffuse.jpg"));
 	metalMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("metal_normal.jpg"));
-	Mesh* mesh = Mesh::InitNew(&data, 1);
 
+	Mesh* mesh = Mesh::InitNew(&data, 1);
 	for (size_t i = 1; i < 30; i++)
 	{
 		auto gO = GameObject::Create();
@@ -80,12 +87,9 @@ void Program::Init()
 		component->Init(mesh, metalMaterial);
 		gO->GetTransform().SetLocalPosition(Vector3(4, 0, -(1.5 * i)));
 	}
-	
+
 	//make soulspear
-	int submeshCount;
-	auto* datas = MeshBuilder::LoadMeshData(submeshCount, "Models/soulspear.obj");
-	mesh = Mesh::InitNew(datas, submeshCount);
-	MeshBuilder::FreeMeshArray(datas, submeshCount);
+	mesh = MeshBuilder::LoadMeshFromPath("Models/soulspear.obj");
 
 	Material* soulMaterial = Material::InitNew(*vertex, *fragment);
 	soulMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("soulspear_diffuse.tga"));
@@ -96,12 +100,6 @@ void Program::Init()
 	MeshRendererComponent* soulSpearRenderer = soulSpear->AddComponent<MeshRendererComponent>();
 	soulSpearRenderer->Init(mesh, soulMaterial);
 	soulSpear->GetTransform().SetLocalPosition(Vector3(-2, -3, -10));
-
-
-	
-
-	
-
 
 	//TEMP - SET MATERIAL INFORMATION
 	auto& materials = renderer.GetMaterials();
@@ -116,6 +114,16 @@ void Program::Init()
 void Program::InitGraphics()
 {
 	renderer.Init("Textures/");
+
+	//setup camera
+	Vector2Int size;
+	glfwGetWindowSize(renderer.GetWindow(), &size.x, &size.y);
+	auto* camera = GameObject::Create();
+	camera->AddComponent<CameraComponent>()->Init(glm::radians(65.0f), size.x / (float)size.y);
+	//add camera light
+	auto* camLight = camera->AddComponent<LightComponent>();
+	camLight->Init(Vector3(1, 1, 1), LightType::POINT);
+	camLight->SetPointLightData(5, LightAttenuationType::INVERSE_SQUARED);
 }
 
 void Program::InitCallbacks()
@@ -194,6 +202,7 @@ void Program::Cleanup()
 {
 	for (size_t i = 0; i < gameObjects.size(); i++)
 	{
+		gameObjects[i]->Unload();
 		delete gameObjects[i];
 	}
 	gameObjects.clear();

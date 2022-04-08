@@ -1,6 +1,6 @@
 #include "GameObject.h"
 #include "Component.h"
-#include "Transform.h"
+#include "Program.h"
 
 unsigned int GameObject::idCounter = 1;
 
@@ -11,8 +11,11 @@ GameObject* GameObject::Create(Transform* parent)
 	gO->enabled = true;
 	
 	if (parent)
-		parent->AddChild(&gO->GetTransform());
+		parent->AddChild(gO->GetTransform());
 	idCounter++;
+
+	Program::GetInstance()->RegisterGameObject(gO);
+	return gO;
 }
 
 void GameObject::Start()
@@ -38,7 +41,17 @@ void GameObject::Update()
 	}
 }
 
-void GameObject::Unload()
+void GameObject::Unload() //called when deleting all objects at once, so no hirarchy changes needed
+{
+	for (auto& component : components)
+	{
+		component->Unload();
+		delete component;
+	}
+	components.clear();
+}
+
+void GameObject::UnloadHierarchy() //called when this object specifically is being deleted
 {
 	for (auto& component : components)
 	{
@@ -47,12 +60,14 @@ void GameObject::Unload()
 	}
 	components.clear();
 
-	for (auto& child : transform.children)
+	for (auto* child : transform.GetChildArray())
 	{
-		child->gameObject->Unload();
-		delete child->gameObject;
+		child->GetGameObject()->UnloadHierarchy();
+		delete child;
 	}
 	transform.children.clear();
+
+	Program::GetInstance()->DeregisterGameObject(this);
 }
 
 void GameObject::SetEnabled(bool enabled)
@@ -83,47 +98,11 @@ GameObject::~GameObject()
 	//call unload to unload an object
 }
 
-GameObject::GameObject(const GameObject& other)
-{
-	components = other.components;
-
-	for (size_t i = 0; i < components.size(); i++)
-	{
-		components[i] = other.components[i]->Clone();
-	}
-	
-	transform = other.transform;
-	enabled = other.enabled;
-
-	id = idCounter;
-	idCounter++;
-
-}
-
-GameObject& GameObject::operator=(const GameObject& other)
-{
-	Unload();
-
-	components = other.components;
-
-	for (size_t i = 0; i < components.size(); i++)
-	{
-		components[i] = other.components[i]->Clone();
-	}
-
-	for (auto& child : transform.children)
-	{
-
-	}
-
-	transform = other.transform;
-	enabled = other.enabled;
-	
-	return *this;
-}
-
 GameObject::GameObject(GameObject&& other)
 {
+	Program::GetInstance()->DeregisterGameObject(&other);
+	Program::GetInstance()->RegisterGameObject(this);
+
 	other.transform.SetAttachedGameObject(this);
 	id = other.id;
 	components = other.components;
@@ -137,7 +116,10 @@ GameObject::GameObject(GameObject&& other)
 
 GameObject& GameObject::operator=(GameObject&& other)
 {
-	Unload();
+	UnloadHierarchy();
+
+	Program::GetInstance()->DeregisterGameObject(&other);
+	Program::GetInstance()->RegisterGameObject(this);
 
 	id = other.id;
 	components = other.components;
@@ -154,5 +136,23 @@ GameObject& GameObject::operator=(GameObject&& other)
 GameObject* GameObject::Copy()
 {
 	GameObject* gO = new GameObject();
+	gO->transform = transform;
+	gO->components = components;
+	for (size_t i = 0; i < components.size(); i++)
+	{
+		gO->components[i] = components[i]->Clone();
+	}
+
+	gO->transform = transform;
+
+	for (size_t i = 0; i < transform.children.size(); i++)
+	{
+		gO->transform.children[i] = &transform.children[i]->GetGameObject()->Copy()->GetTransform();
+	}
+	gO->enabled = enabled;
+	gO->id = idCounter;
+	idCounter++;
+	Program::GetInstance()->RegisterGameObject(this);
+
 	return nullptr;
 }

@@ -13,16 +13,17 @@ void MeshRendererComponent::Init(Mesh* mesh, Material* material)
 	}
 }
 
-void MeshRendererComponent::Render()
+void MeshRendererComponent::Render() const
 {
 	if (material && mesh)
 	{
 		material->Use();
 		//Update uniforms
-		Camera* cam = Program::GetInstance()->GetRenderer().GetMainCamera();
+		CameraComponent* cam = Program::GetInstance()->GetRenderer().GetMainCamera();
 
-		material->SetUniform(MVPMatrix, cam->GetViewProjectionMatrix() * GetTransform().GetLocalMatrix());
-		material->SetUniform(ModelMatrix, GetTransform().GetLocalMatrix());
+		const Transform& t = GetGameObject()->ReadTransform();
+		material->SetUniform(MVPMatrix, cam->GetViewProjectionMatrix() * t.GetLocalMatrix());
+		material->SetUniform(ModelMatrix, t.GetLocalMatrix());
 
 		mesh->Render();
 	}

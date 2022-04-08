@@ -1,8 +1,7 @@
 #pragma once
 #include <vector>
-
+#include "Transform.h"
 class Component;
-class Transform;
 
 class GameObject
 {
@@ -12,6 +11,7 @@ public:
 	void Start();
 	void Update();
 	void Unload();
+	void UnloadHierarchy();
 	void SetEnabled(bool enabled);
 
 	template<typename T>
@@ -28,10 +28,11 @@ public:
 	inline unsigned int GetID() { return id; }
 	inline bool GetEnabled() { return enabled; }
 	Transform& GetTransform() { return transform; }
+	const Transform& ReadTransform() const { return transform; }
 
 	~GameObject();
-	GameObject(const GameObject& other);
-	GameObject& operator=(const GameObject& other);
+	GameObject(const GameObject& other) = delete;
+	GameObject& operator=(const GameObject& other) = delete;
 	GameObject(GameObject&& other);
 	GameObject& operator=(GameObject&& other);
 private:
@@ -51,7 +52,7 @@ template<typename T>
 inline T* GameObject::AddComponent() //this will be broken if the type given does not inherit from component
 {
 	T* component = new T();
-	((Component*)component)->SetGameObject(this);
+	((Component*)component)->ConnectGameObject(this);
 	components.push_back(component);
 
 	component->SetEnabled(true);

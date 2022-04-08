@@ -67,7 +67,9 @@ public:
 	void RemoveChild(Transform& child);
 
 	bool IsParentOf(Transform& child);
-	
+	//
+
+	inline GameObject* GetGameObject() const { return gameObject; }	
 private:
 	friend GameObject;
 	void SetAttachedGameObject(GameObject* gO);
