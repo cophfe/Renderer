@@ -28,6 +28,9 @@ public:
 	void AddChild(Transform& child);
 	void RemoveChild(Transform& child);
 
+	void SetCursorLocked(bool cursorLocked);
+	inline Vector2 GetCursorPos() const { return cursorPosition; }
+	inline bool GetWindowFocused() const { return windowFocused; }
 private:
 	Program() = default;
 	Program(const Program& other) = delete;
@@ -70,10 +73,9 @@ private:
 	double deltaTime;
 	double lastTime;
 	bool windowFocused = true;
-	bool cameraMoving = false;
 
 	const float shaderRecompileTime = 1;
 	float shaderRecompileTimer;
-	Vector2 lastMousePosition;
+	Vector2 cursorPosition;
 };
 

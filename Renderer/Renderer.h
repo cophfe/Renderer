@@ -39,7 +39,7 @@ public:
 	void UpdateLights();
 	void FindMainCamera();
 
-	inline CameraComponent* GetMainCamera() { return cameras.size() > 0 ? cameras[0] : nullptr; }
+	inline CameraComponent* GetMainCamera() const { return cameras.size() > 0 ? cameras[0] : nullptr; }
 	inline GLFWwindow* GetWindow() const { return window; }
 	inline TextureManager& GetTextureManager() { return textureManager; }
 	inline std::vector<Material*>& GetMaterials() { return materials; }

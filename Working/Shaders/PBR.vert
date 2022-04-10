@@ -12,7 +12,7 @@ layout (std140, binding = 0) uniform CameraData
     mat4 _ViewMatrix;				//128
 	mat4 _InverseViewMatrix;
     vec3 _CameraPosition;
-    //mat3(transpose(inverse(model))) // matrix for normals
+    //mat3(transpose(inverse(model))) // matrix for transforming direction vectors, if you want it to work accurately with scaling
 };
 
 uniform mat4 _MVPMatrix;
@@ -26,21 +26,21 @@ struct V2F {
 };
 
 out V2F vertexOutput;
-//apparently usually things are transformed into tangent space and not the other way around. in this case, the inverse tbn matrix is just transpose(TBNMatrix)
 
 void main()
 {
-	o.TexCoord = texCoord;
+	vertexOutput.texCoord = texCoord;
 
     vec4 worldSpacePosition = _ModelMatrix * vec4(position, 1.0);
-    o.Normal = (_ModelMatrix * vec4(normal, 0.0)).xyz;
-    o.FragPos = worldSpacePosition.xyz;
+    vertexOutput.normal = (_ModelMatrix * vec4(normal, 0.0)).xyz;
+    vertexOutput.fragPos = worldSpacePosition.xyz;
 
     gl_Position = _ViewProjectionMatrix * worldSpacePosition;
 
     //get tbn matrix (IN WORLDSPACE)
-    vec3 ModelN =   normalize(vec3(_ModelMatrix * vec4(normal, 0.0)));
-    vec3 ModelT =   normalize(vec3(_ModelMatrix * vec4(tangent, 0.0)));
-    vec3 ModelBiT = normalize(vec3(_ModelMatrix * vec4(bitangent, 0.0)));
-    o.TBNMatrix = mat3(ModelT, ModelBiT, ModelN);
+    //apparently usually things are transformed into tangent space and not the other way around. in this case, the inverse tbn matrix is just transpose(TBNMatrix)
+    vec3 modelN =   normalize(vec3(_ModelMatrix * vec4(normal, 0.0)));
+    vec3 modelT =   normalize(vec3(_ModelMatrix * vec4(tangent, 0.0)));
+    vec3 modelBiT = normalize(vec3(_ModelMatrix * vec4(bitangent, 0.0)));
+    vertexOutput.matrixTBN = mat3(modelT, modelBiT, modelN);
 }

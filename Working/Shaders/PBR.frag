@@ -30,13 +30,12 @@ struct V2F {
 };
 
 out vec4 Colour;
-
 in V2F vertexOutput;
 
 uniform sampler2D _DiffuseMap;
 uniform sampler2D _NormalMap;
 uniform sampler2D _SpecularMap;
-uniform MaterialData _Material;
+uniform PBRMaterial _Material;
 
 layout (std140, binding = 2) uniform Lighting
 {
@@ -56,10 +55,19 @@ layout (std140, binding = 0) uniform CameraData
 //Lighting based on learnopenGL and aie instructure
 //although aie instructure variable names are so bad that it is practically impossible for me to understand without using knowledge from learnopengl
 
+//calculate the diffuse term
 vec3 CalculateDiffuse(LightData light, vec3 normal, vec3 rayDirection, vec3 diffuseColour)
 {
     float diffuseValue =  max(dot(normal, rayDirection), 0.0);
     return diffuseColour * diffuseValue * light.luminance;
+}
+
+//calculate the specular term
+vec3 CalculateSpecular(LightData light, vec3 normal, vec3 rayDirection, vec3 surfaceToCamera)
+{
+    vec3 reflection = reflect(-rayDirection, normal);
+    float specularValue = _Material.specularity * pow(max(0.0f, dot(reflection, surfaceToCamera)), _Material.shininess);
+    return specularValue * light.luminance;
 }
 
 //For point and spotlights
@@ -77,20 +85,13 @@ float CalculateFalloff(LightData light, vec3 rayDirection)
     return clamp((theta - light.maxAngle) / epsilon, 0.0, 1.0);
 }
 
-vec3 CalculateSpecular(LightData light, vec3 normal, vec3 rayDirection)
-{
-    vec3 reflection = reflect(-rayDirection, normal);
-    float specularValue = _Material.specularity * pow(max(0.0f, dot(reflection, surfaceToCamera)), _Material.shininess);
-    return specularValue * light.luminance;
-}
-
 vec3 GetDirectionalLight(LightData light, vec3 normal, vec3 diffuseColour, vec3 surfaceToCamera)
 {
     vec3 rayDirection = light.direction;  
     //diffuse light
     vec3 diffuse = CalculateDiffuse(light, normal, rayDirection, diffuseColour);
     //Specular Light
-    vec3 specular = CalculateSpecular(light, normal, rayDirection);
+    vec3 specular = CalculateSpecular(light, normal, rayDirection, surfaceToCamera);
 
     return diffuse + specular;
 }
@@ -103,7 +104,7 @@ vec3 GetPointLight(LightData light, vec3 normal, vec3 diffuseColour, vec3 surfac
     //diffuse light
     vec3 diffuse = CalculateDiffuse(light, normal, rayDirection, diffuseColour);
     //Specular Light
-    vec3 specular = CalculateSpecular(light, normal, rayDirection);
+    vec3 specular = CalculateSpecular(light, normal, rayDirection, surfaceToCamera);
     
     return attenuation * (diffuse + specular);
 }
@@ -118,9 +119,9 @@ vec3 GetSpotLight(LightData light, vec3 normal, vec3 diffuseColour, vec3 surface
     // spotlight falloff 
     float falloff = CalculateFalloff(light, rayDirection);
     //diffuse light
-    float diffuseValue = CalculateDiffuse(light, normal, rayDirection, diffuseColour);
+    vec3 diffuse = CalculateDiffuse(light, normal, rayDirection, diffuseColour);
     //Specular Light
-    vec3 specular = CalculateSpecular(light, normal, rayDirection);
+    vec3 specular = CalculateSpecular(light, normal, rayDirection, surfaceToCamera);
     
     return falloff * attenuation * (diffuse + specular);
 }
