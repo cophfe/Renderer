@@ -81,17 +81,19 @@ void Program::Init()
 
 	auto& tM = renderer.GetTextureManager();
 
+	//Shader* fragment = Shader::InitNew("Shaders/BasicPBR.frag", Shader::Type::Fragment);
 	Shader* fragment = Shader::InitNew("Shaders/PBR.frag", Shader::Type::Fragment);
 	Shader* vertex = Shader::InitNew("Shaders/PBR.vert", Shader::Type::Vertex);
+
 	Material* defaultMaterial = Material::InitNew(*vertex, *fragment);
-	defaultMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("soulspear_diffuse.tga"));
+	defaultMaterial->SetTextureSampler("_AlbedoMap", tM.LoadTexture("soulspear_diffuse.tga"));
 	defaultMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("soulspear_normal.tga"));
 
 	MeshData data;
 	MeshPrimitive::SetCube(data);
 
 	Material* metalMaterial = Material::InitNew(*vertex, *fragment);
-	metalMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("metal_diffuse.jpg"));
+	metalMaterial->SetTextureSampler("_AlbedoMap", tM.LoadTexture("metal_diffuse.jpg"));
 	metalMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("metal_normal.jpg"));
 
 	Mesh* mesh = Mesh::InitNew(&data, 1);
@@ -107,7 +109,7 @@ void Program::Init()
 	mesh = MeshBuilder::LoadMeshFromPath("Models/soulspear.obj");
 
 	Material* soulMaterial = Material::InitNew(*vertex, *fragment);
-	soulMaterial->SetTextureSampler("_DiffuseMap", tM.LoadTexture("soulspear_diffuse.tga"));
+	soulMaterial->SetTextureSampler("_AlbedoMap", tM.LoadTexture("soulspear_diffuse.tga"));
 	soulMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("soulspear_normal.tga"));
 	soulMaterial->SetTextureSampler("_SpecularMap", tM.LoadTexture("soulspear_specular.tga"));
 
@@ -116,12 +118,24 @@ void Program::Init()
 	soulSpearRenderer->Init(mesh, soulMaterial);
 	soulSpear->GetTransform().SetLocalPosition(Vector3(-2, -3, -10));
 
+	Material* sphereMat = Material::InitNew(*vertex, *fragment);
+	sphereMat->SetTextureSampler("_AlbedoMap", tM.LoadTexture("pixel.png"));
+	sphereMat->SetTextureSampler("_NormalMap", nullptr);
+	Mesh* sphereMesh = MeshBuilder::LoadMeshFromPath("Models/sphere.obj");
+	GameObject* sphere = GameObject::Create();
+	sphere->AddComponent<MeshRendererComponent>()->Init(sphereMesh, sphereMat);
+	sphere->GetTransform().SetPosition(Vector3(0, 5, 0));
+
 	//TEMP - SET MATERIAL INFORMATION
 	auto& materials = renderer.GetMaterials();
 	for (size_t i = 0; i < materials.size(); i++)
 	{
+		//non pbr
 		materials[i]->SetUniform("_Material.shininess", 32.0f);
 		materials[i]->SetUniform("_Material.specularity", 0.6f);
+
+		//pbr
+		materials[i]->SetUniform("_Material.roughness", 0.4f);
 	}
 	//
 }

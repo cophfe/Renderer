@@ -32,7 +32,7 @@ struct V2F {
 out vec4 Colour;
 in V2F vertexOutput;
 
-uniform sampler2D _DiffuseMap;
+uniform sampler2D _AlbedoMap;
 uniform sampler2D _NormalMap;
 uniform sampler2D _SpecularMap;
 uniform PBRMaterial _Material;
@@ -132,7 +132,7 @@ void main()
 	vec3 normalTS = texture(_NormalMap, vertexOutput.texCoord).xyz * 2 - 1;
 	vec3 normalWS = normalize(vertexOutput.matrixTBN * normalTS); //TBN Matrix is in world space
 
-    vec3 diffuseColour = texture(_DiffuseMap, vertexOutput.texCoord.xy).xyz;
+    vec3 diffuseColour = texture(_AlbedoMap, vertexOutput.texCoord.xy).xyz;
     vec3 surfaceToCamera = normalize(_CameraPosition - vertexOutput.fragPos);
     
     //Light Values
