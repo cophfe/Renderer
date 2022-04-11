@@ -222,12 +222,12 @@ void Program::UpdateTime()
 	deltaTime = newTime - lastTime;
 	lastTime = newTime;
 
-	shaderRecompileTimer -= deltaTime;
-	if (shaderRecompileTimer < 0)
-	{
-		renderer.RecompileShaders();
-		shaderRecompileTimer = shaderRecompileTime;
-	}
+	//shaderRecompileTimer -= deltaTime;
+	//if (shaderRecompileTimer < 0)
+	//{
+	//	renderer.RecompileShaders();
+	//	shaderRecompileTimer = shaderRecompileTime;
+	//}
 }
 
 #pragma region Input 
