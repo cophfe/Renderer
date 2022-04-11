@@ -239,3 +239,41 @@ void Renderer::FindMainCamera()
 	}
 }
 
+void Renderer::SetPBRValues(Material* pbrMaterial, float roughnessMultiplier, const char* albedo, const char* normal, const char* roughness, const char* metallic, const char* ao, bool defaultMetallic)
+{
+	if (!pbrMaterial)
+		return;
+
+	if (albedo)
+		pbrMaterial->SetTextureSampler("_AlbedoMap", textureManager.LoadTexture(albedo));
+	else
+		pbrMaterial->SetTextureSampler("_AlbedoMap", textureManager.LoadTexture("white.png"));
+
+	if (normal)
+		pbrMaterial->SetTextureSampler("_NormalMap", textureManager.LoadTexture(normal));
+	else
+		pbrMaterial->SetTextureSampler("_NormalMap", textureManager.LoadTexture("normal.png"));
+
+	if (roughness)
+		pbrMaterial->SetTextureSampler("_RoughnessMap", textureManager.LoadTexture(roughness));
+	else
+		pbrMaterial->SetTextureSampler("_RoughnessMap", textureManager.LoadTexture("white.png"));
+
+	if (metallic)
+		pbrMaterial->SetTextureSampler("_MetallicMap", textureManager.LoadTexture(metallic));
+	else
+	{
+		if (defaultMetallic)
+			pbrMaterial->SetTextureSampler("_MetallicMap", textureManager.LoadTexture("white.png"));
+		else
+			pbrMaterial->SetTextureSampler("_MetallicMap", textureManager.LoadTexture("black.png"));
+	}
+
+	if (ao)
+		pbrMaterial->SetTextureSampler("_AmbientOcclusionMap", textureManager.LoadTexture(ao));
+	else
+		pbrMaterial->SetTextureSampler("_MetallicMap", textureManager.LoadTexture("white.png"));
+
+	pbrMaterial->SetUniform("_Material.roughness", roughnessMultiplier);
+}
+

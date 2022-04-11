@@ -17,22 +17,25 @@ struct LightData
     int type; 
 };
 
-struct MaterialData {
+struct PBRMaterial {
     float shininess; //between 0 and 300 (roughly, usually)
     float specularity; //between 0 and 1 (usually)
 };
 
+struct V2F {
+    mat3 matrixTBN;
+    vec3 normal;
+    vec3 fragPos;
+    vec2 texCoord;
+};
+
 out vec4 Colour;
+in V2F vertexOutput;
 
-in vec2 TexCoord;
-in vec3 FragPos;
-in vec3 Normal;
-in mat3 TBNMatrix;
-
-uniform sampler2D _DiffuseMap;
+uniform sampler2D _AlbedoMap;
 uniform sampler2D _NormalMap;
 uniform sampler2D _SpecularMap;
-uniform MaterialData _Material;
+uniform PBRMaterial _Material;
 
 layout (std140, binding = 2) uniform Lighting
 {
@@ -50,56 +53,75 @@ layout (std140, binding = 0) uniform CameraData
 };
 
 //Lighting based on learnopenGL and aie instructure
-//although aie instructure variable names are so bad that it is practically impossible to understand without first comparing it to learnopenGL
+//although aie instructure variable names are so bad that it is practically impossible for me to understand without using knowledge from learnopengl
 
-vec3 GetPointLight(LightData light, vec3 normal, vec3 diffuseColour, vec3 surfaceToCamera)
+//calculate the diffuse term
+vec3 CalculateDiffuse(LightData light, vec3 normal, vec3 rayDirection, vec3 diffuseColour)
 {
-    vec3 rayDirection = normalize(light.position - FragPos);  
-    //attenuation
-    float dist = length(light.position - FragPos);
-    float attenuation = 1.0 / (1 + light.linear * dist + light.quadratic * dist * dist);
-    //diffuse light
     float diffuseValue =  max(dot(normal, rayDirection), 0.0);
-    vec3 diffuse = diffuseColour * diffuseValue * light.luminance;
-    //Specular Light
+    return diffuseColour * diffuseValue * light.luminance;
+}
+
+//calculate the specular term
+vec3 CalculateSpecular(LightData light, vec3 normal, vec3 rayDirection, vec3 surfaceToCamera)
+{
     vec3 reflection = reflect(-rayDirection, normal);
     float specularValue = _Material.specularity * pow(max(0.0f, dot(reflection, surfaceToCamera)), _Material.shininess);
-    vec3 specular = specularValue * light.luminance;
-    
-    return attenuation * (diffuse + specular);
+    return specularValue * light.luminance;
+}
+
+//For point and spotlights
+float CalculateAttenuation(LightData light)
+{
+    float dist = length(light.position - vertexOutput.fragPos);
+    return  1.0 / (1.0 + light.linear * dist + light.quadratic * dist * dist);
+}
+
+//for spotlights
+float CalculateFalloff(LightData light, vec3 rayDirection)
+{
+    float theta = dot(rayDirection, normalize(light.direction)); 
+    float epsilon = light.minAngle - light.maxAngle;
+    return clamp((theta - light.maxAngle) / epsilon, 0.0, 1.0);
 }
 
 vec3 GetDirectionalLight(LightData light, vec3 normal, vec3 diffuseColour, vec3 surfaceToCamera)
 {
     vec3 rayDirection = light.direction;  
     //diffuse light
-    float diffuseValue =  max(dot(normal, rayDirection), 0);
-    vec3 diffuse = diffuseColour * diffuseValue * light.luminance;
+    vec3 diffuse = CalculateDiffuse(light, normal, rayDirection, diffuseColour);
     //Specular Light
-    vec3 reflection = reflect(-rayDirection, normal);
-    float specularValue = _Material.specularity * pow(max(0.0f, dot(reflection, surfaceToCamera)), _Material.shininess);
-    vec3 specular = specularValue * light.luminance;
+    vec3 specular = CalculateSpecular(light, normal, rayDirection, surfaceToCamera);
 
     return diffuse + specular;
 }
 
+vec3 GetPointLight(LightData light, vec3 normal, vec3 diffuseColour, vec3 surfaceToCamera)
+{
+    vec3 rayDirection = normalize(light.position - vertexOutput.fragPos);  
+    //attenuation
+    float attenuation = CalculateAttenuation(light);
+    //diffuse light
+    vec3 diffuse = CalculateDiffuse(light, normal, rayDirection, diffuseColour);
+    //Specular Light
+    vec3 specular = CalculateSpecular(light, normal, rayDirection, surfaceToCamera);
+    
+    return attenuation * (diffuse + specular);
+}
+
 vec3 GetSpotLight(LightData light, vec3 normal, vec3 diffuseColour, vec3 surfaceToCamera)
 {
-    float dist = length(light.position - FragPos);
-    vec3 rayDirection = (light.position - FragPos) / dist; //not the direction of the spotlight, the direction of the ray
+    //not the direction of the spotlight, the direction of the ray (light eminates from light position in all directions)
+    vec3 rayDirection = normalize(light.position - vertexOutput.fragPos); 
+    
     //attenuation
-    float attenuation = 1.0 / (1 + light.linear * dist + light.quadratic * dist * dist);
+    float attenuation = CalculateAttenuation(light);
     // spotlight falloff 
-    float theta = dot(rayDirection, normalize(light.direction)); 
-    float epsilon = light.minAngle - light.maxAngle;
-    float falloff = clamp((theta - light.maxAngle) / epsilon, 0.0, 1.0);
+    float falloff = CalculateFalloff(light, rayDirection);
     //diffuse light
-    float diffuseValue =  max(dot(normal, rayDirection), 0.0);
-    vec3 diffuse = diffuseColour * diffuseValue * light.luminance;
+    vec3 diffuse = CalculateDiffuse(light, normal, rayDirection, diffuseColour);
     //Specular Light
-    vec3 reflection = reflect(-rayDirection, normal);
-    float specularValue = _Material.specularity * pow(max(0.0f, dot(reflection, surfaceToCamera)), _Material.shininess);
-    vec3 specular = specularValue * light.luminance;
+    vec3 specular = CalculateSpecular(light, normal, rayDirection, surfaceToCamera);
     
     return falloff * attenuation * (diffuse + specular);
 }
@@ -107,11 +129,11 @@ vec3 GetSpotLight(LightData light, vec3 normal, vec3 diffuseColour, vec3 surface
 void main()
 {
 	//Get normal
-	vec3 normalTS = texture(_NormalMap, TexCoord).xyz * 2 - 1;
-	vec3 normalWS = normalize(TBNMatrix * normalTS); //TBN Matrix is in world space
+	vec3 normalTS = texture(_NormalMap, vertexOutput.texCoord).xyz * 2 - 1;
+	vec3 normalWS = normalize(vertexOutput.matrixTBN * normalTS); //TBN Matrix is in world space
 
-    vec3 diffuseColour = texture(_DiffuseMap, TexCoord.xy).xyz;
-    vec3 surfaceToCamera = normalize(_CameraPosition - FragPos);
+    vec3 diffuseColour = texture(_AlbedoMap, vertexOutput.texCoord.xy).xyz;
+    vec3 surfaceToCamera = normalize(_CameraPosition - vertexOutput.fragPos);
     
     //Light Values
     vec3 ambient = _AmbientColour.xyz * diffuseColour;
@@ -135,9 +157,7 @@ void main()
             break;
         }
     }
-//
-	//Colour = vec4(TexCoord.xy, 0, 1.0);
-    //Colour = texture(_DiffuseMap, vec2(TexCoord.x, TexCoord.y));
+
     Colour = vec4(lightPower, 1.0);
 } 
 

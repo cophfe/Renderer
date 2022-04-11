@@ -15,18 +15,11 @@ struct LightDataStruct //aligned to 16
 	Vector3 luminance;
 	int : 32;
 	Vector3 direction;
-	float linear;
-	float quadratic;
 	float minAngle;
 	float maxAngle;
 	int type = 0;
-};
-
-enum class LightAttenuationType
-{
-	INVERSE_SQUARED,
-	LINEAR
-
+	int : 32;
+	int : 32;
 };
 
 class LightComponent : public Component
@@ -34,12 +27,12 @@ class LightComponent : public Component
 public:
 	void Init(Vector3 luminance, LightType type);
 	void Init(Vector3 luminance, float radius, float minAngleRad, float falloffRadians, 
-		LightType type = LightType::SPOTLIGHT, LightAttenuationType attenuationType = LightAttenuationType::INVERSE_SQUARED);
+		LightType type = LightType::SPOTLIGHT);
 	void Init(Vector3 luminance, float radius, 
-		LightType type = LightType::POINT, LightAttenuationType attenuationType = LightAttenuationType::INVERSE_SQUARED);
+		LightType type = LightType::POINT);
 
-	void SetSpotLightData(float radius, float minAngleRad, float falloffRadians, LightAttenuationType attenuationType = LightAttenuationType::INVERSE_SQUARED);
-	void SetPointLightData(float radius, LightAttenuationType attenuationType = LightAttenuationType::INVERSE_SQUARED);
+	void SetSpotLightData(float radius, float minAngleRad, float falloffRadians);
+	void SetPointLightData(float radius);
 	static float EstimateLightIntensityAtPoint(Vector3 point, const LightDataStruct& lightData);
 
 	const LightDataStruct& GetLightData();
@@ -53,6 +46,7 @@ private:
 	virtual void Unload() override;
 	virtual Component* Clone() const override;
 
+	Vector3 luminance;
 	LightDataStruct lightData;
 	LightType type;
 };

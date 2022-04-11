@@ -8,11 +8,8 @@ struct LightData
 {
     //vectors
     vec3 position;
-    vec3 luminance; // contains colour 
+    vec3 luminance; // contains colour and brightness
     vec3 direction; //spot and directional light direction
-    //point and spot light attenuation
-    float linear;
-    float quadratic;
     //spot light angle
     float minAngle; //starts to fall off
     float maxAngle; //finishes falling off
@@ -46,7 +43,7 @@ uniform samplerCube _CubeMap;
 layout (std140, binding = 2) uniform Lighting
 {
     LightData _Lights[LIGHT_COUNT];  //0
-	vec4 _AmbientColour;			 //72 * LIGHT_COUNT
+	vec3 _AmbientColour;			 //72 * LIGHT_COUNT
 };
 layout (std140, binding = 0) uniform CameraData
 {
@@ -58,15 +55,21 @@ layout (std140, binding = 0) uniform CameraData
     //mat3(transpose(inverse(model))) // Matrix for normals
 };
 
+float GetLuminance(vec3 colour)
+{
+    return 0.2126*colour.r + 0.7152*colour.g + 0.0722*colour.b;
+}
 //this is an amazing source for PBR:
 //https://learnopengl.com/PBR/Theory
 //it even explains a lot of the physical theory behind the calculations, and shows some of the approximations used in the industry
 //this is suuuper useful for getting different approximations: https://www.jordanstevenstechart.com/physically-based-rendering
 
+//note: all of these distribution functions were wierd and jittery on complex shapes
 float Distribution (float nDH, float roughness)
 {
-    //Trowbridge-Reitz 
     float r2 = roughness*roughness;
+    
+	//Trowbridge-Reitz 
     float div = nDH * nDH * (r2 - 1.0) + 1.0;
     return r2 / (div * div * PI_VALUE);
 
@@ -82,16 +85,19 @@ float Distribution (float nDH, float roughness)
     //return pow( E_VALUE, ex) / (r2 * nDH2 * nDH2);
 }
 
-float Fresnel(vec3 normal, vec3 viewDir)
+vec3 Fresnel(vec3 normal, vec3 halfDir, vec3 f0)
 {
-    //pass in vec3 normal, vec3 halfDir, float metallicity, vec3 surfaceColour
-    //vec3 f0 = mix(vec3(0.05), surfaceColour, metallicity);
-    //float cosTheta = max(dot(normal, halfDir), 0);
-    //return f0 + (1 - f0) * pow(1 - cosTheta, 5);
+    //f0 is basically the base surface reflectance
+    //I'm using this model because learnopengl says it allows 
+    //  for transitioning between metallic and non metallic better (physically, that isn't a thing, but we dealing with pixels here)
 
-    //pass in vec3 normal, vec3 viewDir for this one
-    float nDV = 1.0 - dot(normal, viewDir);
-    return 0.05 + (1 - 0.05) * nDV * nDV * nDV * nDV * nDV;
+    //pass in vec3 normal, vec3 halfDir (return vec3)
+    float oneMinusCosTheta = clamp(1 - max(dot(normal, halfDir), 0), 0, 1);
+    return f0 + (1.0 - f0) * pow(oneMinusCosTheta, 5.0);
+
+    //pass in vec3 normal, vec3 viewDir, float f0 (return float)
+    // float nDV = 1.0 - dot(normal, viewDir);
+    // return 0.05 + (1 - 0.05) * nDV * nDV * nDV * nDV * nDV;
 }
 
 float Geometry(float nDV, float nDL, float roughness)
@@ -105,39 +111,16 @@ float Geometry(float nDV, float nDL, float roughness)
     return (nDV / (nDV * (1.0 - k) + k)) * (nDL / (nDL * (1.0 - k) + k));
 
     //this is the function AIE uses, they don't say what one it is
-    //research says its the cook torrance gsf, which i guess makes sense.
+    //research says its the cook torrance gsf, which i guess makes sense, seeing as this is cook torrance.
     //float x = 2.0f * nDH / nDH;
     //return min(1.0, min(x * nDV, x * nDL));
-}
-
-vec3 CookTorranceBRDF(vec3 lightDir, vec3 viewDir, vec3 surfaceNorm, float roughness, float metallicity, vec3 surfaceColour)
-{
-    vec3 halfDir = normalize(lightDir + viewDir);    
-    //now the specular part
-    float nDH = max(dot(surfaceNorm, halfDir), 0.0);
-    float nDV = max(dot(viewDir, surfaceNorm), 0.0);
-    float nDL = max(dot(lightDir, surfaceNorm), 0.0);
-
-    float distribution = Distribution(nDH, roughness);
-    //vec3 fresnel = Fresnel(surfaceNorm, halfDir, metallicity, surfaceColour);
-    float fresnel = Fresnel(surfaceNorm, viewDir);
-    //Smith's Schlick-GGX
-    float geometry = Geometry(nDV, nDL, roughness);
-    float specular = (distribution*fresnel*geometry)/(4 * nDV * nDL);
-
-    //the diffuse part of the BRDF
-    //i think aie uses oren-nayar diffuse reflectance as a replacement for this?
-    //kD is the proportion of total energy being turned into diffuse lighting, which is just 1.0 - the fresnel term
-    vec3 diffuse = (1.0f - fresnel) * surfaceColour/PI_VALUE;
-
-    return vec3(distribution);
 }
 
 //For point and spotlights
 float CalculateAttenuation(LightData light)
 {
     float dist = length(light.position - vertexOutput.fragPos);
-    return  1.0 / (1.0 + light.linear * dist + light.quadratic * dist * dist);
+    return  1.0 / (dist * dist);
 }
 
 //for spotlights
@@ -152,19 +135,67 @@ void main()
 {
     //i will probably need to change everything so it's all in tangent space instead of world space 
 
-    //Get normal
+    //get all fragment values
+    float ambientOcclusion = texture(_AmbientOcclusionMap, vertexOutput.texCoord).r;
+    float metallicity = texture(_MetallicMap, vertexOutput.texCoord).r;
+    float roughness = clamp(_Material.roughness * texture(_RoughnessMap, vertexOutput.texCoord).r, 0, 1);
+    vec3 albedoColour = texture(_AlbedoMap, vertexOutput.texCoord).xyz; 
 	vec3 normalTS = texture(_NormalMap, vertexOutput.texCoord).xyz * 2 - 1;
 	vec3 normalWS = normalize(vertexOutput.matrixTBN * normalTS); //TBN Matrix is in world space
 
-    vec3 viewDirection = normalize(vertexOutput.fragPos - _CameraPosition);
+    vec3 viewDirection = normalize(_CameraPosition - vertexOutput.fragPos);
 
-    //get fragment properties
-    float metallicity = texture(_MetallicMap, vertexOutput.texCoord).r;
-    float roughness = clamp(_Material.roughness * texture(_RoughnessMap, vertexOutput.texCoord).r, 0, 1);
-    vec3 surfaceColour = texture(_AlbedoMap, vertexOutput.texCoord).xyz;
+	vec3 outputColour = vec3(0);//_AmbientColour * ambientOcclusion * albedoColour;
+    for (int i = 0; i < 2; i++)
+    {
+        //note: should check type of light to get these 2 values
+		vec3 lightDirection;
+		float lightPowerMultiplier = 1;
+
+		//i am using this like a c switch when I should be using it as a glsl switch
+		//aka i am concerned this breaks the non branchingness of gpus. hopefully we good? 
+		switch(_Lights[i].type)
+        {
+            case 0: // directional light
+			lightDirection = _Lights[i].direction;
+            break;
+
+            case 1: // point light
+        	lightDirection = normalize(_Lights[i].position - vertexOutput.fragPos);
+			lightPowerMultiplier = CalculateAttenuation(_Lights[i]);
+            break;
+
+			case 2: // spot light
+        	lightDirection = normalize(_Lights[i].position - vertexOutput.fragPos);
+			lightPowerMultiplier = CalculateFalloff(_Lights[i], lightDirection) * CalculateAttenuation(_Lights[i]);
+			break;
+        }
+        vec3 lightPower = _Lights[i].luminance * lightPowerMultiplier;
+
+    	vec3 halfDir = normalize(lightDirection + viewDirection);    
+        float nDH = max(dot(normalWS, halfDir), 0.0);
+        float nDV = max(dot(normalWS, viewDirection), 0.0);
+        float nDL = max(dot(normalWS, lightDirection), 0.0);
+    	vec3 f0 = mix(vec3(0.04), albedoColour, vec3(metallicity));
+
+    	float distribution = Distribution(nDH, roughness);
+    	vec3 fresnel = Fresnel(normalWS, viewDirection, f0);
+    	float geometry = Geometry(nDV, nDL, roughness);
+    	
+		vec3 s = (distribution*fresnel*geometry) 
+			/ (4 * nDV * nDL); //may need to add + 0.000001 to the denominator
+		
+		//fresnel basically works as the proportion of energy being reflected, kD will be the inverse of that (whatever energy was not reflected should be diffused) 
+		//except since metals don't have a diffuse term (aka the diffuse energy is 100% absorbed by the object), diffuse energy has to be multiplied by inverse metalness to basically lerp it to zero based on metalness
+		//now we don't need a seperate pipeline for metal and non metal stuff, and they can be lerped between for smooth edges n stuff (aka physics got absolutely scammed, hooray)
+		vec3 kD = (vec3(1) - fresnel) * (1 - metallicity);
+
+		//final output luminance (timesed by nDL because i have no idea (it makes sense why the diffuse, but i thought the geometry value took that into account for specular))
+		outputColour += (s + kD * albedoColour / PI_VALUE) * lightPower * nDL;
+		//outputColour = vec3(lightPowerMultiplier);
+    }
     
-    vec3 lightDirection = normalize(vertexOutput.fragPos - _Lights[0].position);
-    
-    vec3 colour = CookTorranceBRDF(lightDirection, viewDirection, normalTS, roughness, metallicity, surfaceColour); //* CalculateAttenuation(_Lights[0]);
-    Colour = vec4(colour, 1);
+	//apparently this all needs to be gamma corrected?????
+	//outputColour = pow(outputColour/ (outputColour + vec3(1)), vec3(1/2.2));
+    Colour = vec4(outputColour, 1);
 }

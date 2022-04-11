@@ -81,20 +81,15 @@ void Program::Init()
 
 	auto& tM = renderer.GetTextureManager();
 
-	//Shader* fragment = Shader::InitNew("Shaders/BasicPBR.frag", Shader::Type::Fragment);
-	Shader* fragment = Shader::InitNew("Shaders/PBR.frag", Shader::Type::Fragment);
+	//note: non pbr will literally not work since it uses values that lights will no longer pass
+	Shader* fragment = Shader::InitNew("Shaders/BasicPBR.frag", Shader::Type::Fragment);
 	Shader* vertex = Shader::InitNew("Shaders/PBR.vert", Shader::Type::Vertex);
-
-	Material* defaultMaterial = Material::InitNew(*vertex, *fragment);
-	defaultMaterial->SetTextureSampler("_AlbedoMap", tM.LoadTexture("soulspear_diffuse.tga"));
-	defaultMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("soulspear_normal.tga"));
 
 	MeshData data;
 	MeshPrimitive::SetCube(data);
 
 	Material* metalMaterial = Material::InitNew(*vertex, *fragment);
-	metalMaterial->SetTextureSampler("_AlbedoMap", tM.LoadTexture("metal_diffuse.jpg"));
-	metalMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("metal_normal.jpg"));
+	renderer.SetPBRValues(metalMaterial, 0.3f, "metal_diffuse.jpg", "metal_normal.jpg", nullptr, nullptr, nullptr, true);
 
 	Mesh* mesh = Mesh::InitNew(&data, 1);
 	for (size_t i = 1; i < 30; i++)
@@ -108,10 +103,9 @@ void Program::Init()
 	//make soulspear
 	mesh = MeshBuilder::LoadMeshFromPath("Models/soulspear.obj");
 
+
 	Material* soulMaterial = Material::InitNew(*vertex, *fragment);
-	soulMaterial->SetTextureSampler("_AlbedoMap", tM.LoadTexture("soulspear_diffuse.tga"));
-	soulMaterial->SetTextureSampler("_NormalMap", tM.LoadTexture("soulspear_normal.tga"));
-	soulMaterial->SetTextureSampler("_SpecularMap", tM.LoadTexture("soulspear_specular.tga"));
+	renderer.SetPBRValues(soulMaterial, 0.7f, "soulspear_diffuse.tga", "soulspear_normal.tga");
 
 	auto soulSpear = GameObject::Create();
 	MeshRendererComponent* soulSpearRenderer = soulSpear->AddComponent<MeshRendererComponent>();
@@ -119,30 +113,46 @@ void Program::Init()
 	soulSpear->GetTransform().SetLocalPosition(Vector3(-2, -3, -10));
 
 	Material* sphereMat = Material::InitNew(*vertex, *fragment);
-	sphereMat->SetTextureSampler("_AlbedoMap", tM.LoadTexture("pixel.png"));
-	sphereMat->SetTextureSampler("_NormalMap", nullptr);
+	renderer.SetPBRValues(sphereMat);
 	Mesh* sphereMesh = MeshBuilder::LoadMeshFromPath("Models/sphere.obj");
 	GameObject* sphere = GameObject::Create();
 	sphere->AddComponent<MeshRendererComponent>()->Init(sphereMesh, sphereMat);
 	sphere->GetTransform().SetPosition(Vector3(0, 5, 0));
 
-	//TEMP - SET MATERIAL INFORMATION
-	auto& materials = renderer.GetMaterials();
-	for (size_t i = 0; i < materials.size(); i++)
-	{
-		//non pbr
-		materials[i]->SetUniform("_Material.shininess", 32.0f);
-		materials[i]->SetUniform("_Material.specularity", 0.6f);
-
-		//pbr
-		materials[i]->SetUniform("_Material.roughness", 0.4f);
-	}
-	//
+	Material* chestMat = Material::InitNew(*vertex, *fragment);
+	renderer.SetPBRValues(chestMat, 1.0f, "chest_albedo.png", "chest_normal.png", "chest_roughness.png", "chest_metalness.png", "chest_ao.png");
+	Mesh* chestMesh = MeshBuilder::LoadMeshFromPath("Models/chest.obj");
+	GameObject* chest = GameObject::Create();
+	chest->AddComponent<MeshRendererComponent>()->Init(chestMesh, chestMat);
+	chest->GetTransform().SetPosition(Vector3(0, -5, 0));
+	
+	Material* hydrantMat = Material::InitNew(*vertex, *fragment);
+	renderer.SetPBRValues(hydrantMat, 1.0f, "fire_hydrant_albedo.png", "fire_hydrant_normal.png", "fire_hydrant_roughness.png", "fire_hydrant_metalness.png", "fire_hydrant_ao.png");
+	Mesh* hydrantMesh = MeshBuilder::LoadMeshFromPath("Models/fireHydrant.obj");
+	GameObject* hydrant = GameObject::Create();
+	hydrant->AddComponent<MeshRendererComponent>()->Init(hydrantMesh, hydrantMat);
+	hydrant->GetTransform().SetPosition(Vector3(4, -5, -6));
+	////TEMP - SET MATERIAL INFORMATION
+	//auto& materials = renderer.GetMaterials();
+	//for (size_t i = 0; i < materials.size(); i++)
+	//{
+	//	//non pbr
+	//	materials[i]->SetUniform("_Material.shininess", 32.0f);
+	//	materials[i]->SetUniform("_Material.specularity", 0.6f);
+	//}
+	////
 }
 
 void Program::InitGraphics()
 {
 	renderer.Init("Textures/");
+
+	//add sun
+	GameObject* sunObj = GameObject::Create();
+	auto* sun = sunObj->AddComponent<LightComponent>();
+	sun->Init(Vector3(1, 0.9568627f, 0.8392157f), LightType::DIRECTION);
+	sunObj->GetTransform().Rotate(glm::radians(50.0f), Vector3(1, 0, 0));
+	sunObj->GetTransform().Rotate(glm::radians(-30.0f), Vector3(0, 1, 0));
 
 	//setup camera
 	Vector2Int size;
@@ -152,7 +162,7 @@ void Program::InitGraphics()
 	//add camera light
 	auto* camLight = camera->AddComponent<LightComponent>();
 	camLight->Init(Vector3(1, 1, 1), LightType::POINT);
-	camLight->SetPointLightData(5, LightAttenuationType::INVERSE_SQUARED);
+	camLight->SetPointLightData(5);
 	//add mover
 	camera->AddComponent<CameraMoveComponent>()->Init(3, 1.06f, 4);
 }

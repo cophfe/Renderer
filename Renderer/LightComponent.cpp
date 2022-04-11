@@ -3,80 +3,41 @@
 
 void LightComponent::Init(Vector3 luminance, LightType type)
 {
+	this->luminance = luminance;
 	lightData.luminance = luminance;
 	this->type = type;
 	lightData.type = (int)type;
 }
 
-void LightComponent::Init(Vector3 luminance, float radius, float minAngleRad, float falloffRadians, LightType type, LightAttenuationType attenuationType)
+void LightComponent::Init(Vector3 luminance, float radius, float minAngleRad, float falloffRadians, LightType type)
 {
-	lightData.luminance = luminance;
+	this->luminance = luminance;
+	lightData.luminance = luminance * radius * radius;
 	this->type = type;
 	lightData.type = (int)type;
-
-	switch (attenuationType)
-	{
-	case LightAttenuationType::INVERSE_SQUARED:
-		//describes how the constant linear quadratic formula is physically accurate
-		//https://imdoingitwrong.wordpress.com/2011/01/31/light-attenuation/
-
-		lightData.linear = 2.0f / radius;
-		lightData.quadratic = 1.0f / (radius * radius);
-		break;
-	case LightAttenuationType::LINEAR:
-		lightData.linear = 2.0f / radius;
-		lightData.quadratic = 1.0f;
-		break;
-	}
-
+	
 	lightData.minAngle = glm::cos(minAngleRad);
 	lightData.maxAngle = glm::cos(minAngleRad + falloffRadians);
 }
 
-void LightComponent::Init(Vector3 luminance, float radius, LightType type, LightAttenuationType attenuationType)
+void LightComponent::Init(Vector3 luminance, float radius, LightType type)
 {
-	lightData.luminance = luminance;
+	this->luminance = luminance;
+	lightData.luminance = luminance * radius * radius;
 	this->type = type;
 	lightData.type = (int)type;
-	switch (attenuationType)
-	{
-	case LightAttenuationType::INVERSE_SQUARED:
-		//describes how the constant linear quadratic formula is physically accurate
-		//https://imdoingitwrong.wordpress.com/2011/01/31/light-attenuation/
-
-		lightData.linear = 2.0f / radius;
-		lightData.quadratic = 1.0f / (radius * radius);
-		break;
-	case LightAttenuationType::LINEAR:
-		lightData.linear = 2.0f / radius;
-		lightData.quadratic = 1.0f;
-		break;
-	}
 }
 
-void LightComponent::SetSpotLightData(float radius, float minAngleRad, float falloffRadians, LightAttenuationType type)
+void LightComponent::SetSpotLightData(float radius, float minAngleRad, float falloffRadians)
 {
 	lightData.minAngle = glm::cos(minAngleRad);
 	lightData.maxAngle = glm::cos(minAngleRad + falloffRadians);
-	SetPointLightData(radius, type);
+	SetPointLightData(radius);
 }
 
-void LightComponent::SetPointLightData(float radius, LightAttenuationType type)
+void LightComponent::SetPointLightData(float radius)
 {
-	switch (type)
-	{
-	case LightAttenuationType::INVERSE_SQUARED:
-		//describes how the constant linear quadratic formula is physically accurate
-		//https://imdoingitwrong.wordpress.com/2011/01/31/light-attenuation/
-
-		lightData.linear = 2.0f / radius;
-		lightData.quadratic = 1.0f / (radius * radius);
-		break;
-	case LightAttenuationType::LINEAR:
-		lightData.linear = 2.0f / radius;
-		lightData.quadratic = 1.0f;
-		break;
-	}
+	lightData.luminance = luminance * radius * radius;
 	Program::GetInstance()->GetRenderer().UpdateLights();
 }
 
@@ -99,7 +60,7 @@ float LightComponent::EstimateLightIntensityAtPoint(Vector3 point, const LightDa
 	}
 	case LightType::POINT:
 	{
-		float attenuation = 1.0f / (1 + lightData.linear * distance + lightData.quadratic * distance * distance);
+		float attenuation = 1.0f / (distance * distance);
 		intensity *= attenuation;
 		break;
 	}

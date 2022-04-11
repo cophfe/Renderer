@@ -50,8 +50,8 @@ public:
 
 	Vector4 ambientColour = Vector4(0.05f, 0.05f, 0.05f, 1.0f);
 
+	void SetPBRValues(Material* pbrMaterial, float roughnessMultiplier = 0.5f, const char* albedo = nullptr, const char* normal = nullptr, const char* roughness = nullptr, const char* metallic = nullptr, const char* ao = nullptr, bool defaultMetallic = false);
 private:
-
 	GLFWwindow* window;
 
 	const float shaderRecompileTime = 1;
