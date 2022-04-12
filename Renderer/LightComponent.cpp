@@ -7,6 +7,7 @@ void LightComponent::Init(Vector3 luminance, LightType type)
 	lightData.luminance = luminance;
 	this->type = type;
 	lightData.type = (int)type;
+	Program::GetInstance()->GetRenderer().UpdateLights();
 }
 
 void LightComponent::Init(Vector3 luminance, float radius, float minAngleRad, float falloffRadians, LightType type)
@@ -18,6 +19,7 @@ void LightComponent::Init(Vector3 luminance, float radius, float minAngleRad, fl
 	
 	lightData.minAngle = glm::cos(minAngleRad);
 	lightData.maxAngle = glm::cos(minAngleRad + falloffRadians);
+	Program::GetInstance()->GetRenderer().UpdateLights();
 }
 
 void LightComponent::Init(Vector3 luminance, float radius, LightType type)
@@ -26,6 +28,7 @@ void LightComponent::Init(Vector3 luminance, float radius, LightType type)
 	lightData.luminance = luminance * radius * radius;
 	this->type = type;
 	lightData.type = (int)type;
+	Program::GetInstance()->GetRenderer().UpdateLights();
 }
 
 void LightComponent::SetSpotLightData(float radius, float minAngleRad, float falloffRadians)

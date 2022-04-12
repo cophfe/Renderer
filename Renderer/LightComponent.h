@@ -11,15 +11,11 @@ enum class LightType
 struct LightDataStruct //aligned to 16
 {
 	Vector3 position;
-	int : 32;
-	Vector3 luminance;
-	int : 32;
-	Vector3 direction;
 	float minAngle;
+	Vector3 luminance;
 	float maxAngle;
+	Vector3 direction;
 	int type = 0;
-	int : 32;
-	int : 32;
 };
 
 class LightComponent : public Component

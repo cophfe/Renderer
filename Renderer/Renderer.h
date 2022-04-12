@@ -86,7 +86,7 @@ private:
 	struct LightingBufferStruct {
 		LightDataStruct lights[8];
 
-		Vector4 ambientColour;
+		Vector3 ambientColour;
 	};
 
 	//uniform buffers (if stored)

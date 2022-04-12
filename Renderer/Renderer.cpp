@@ -97,8 +97,8 @@ void Renderer::UpdateUniformBuffers()
 	if (cameras.size() > 0)
 	{
 		CameraComponent* mainCamera = cameras[0];
+		mainCamera->UpdateCamera();
 		CameraBufferStruct cameraData;
-
 		cameraData.ProjectionMatrix = mainCamera->GetProjectionMatrix();
 		cameraData.ViewMatrix = mainCamera->GetViewMatrix();
 		cameraData.ViewProjectionMatrix = mainCamera->GetViewProjectionMatrix();

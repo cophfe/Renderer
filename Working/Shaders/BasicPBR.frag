@@ -6,13 +6,16 @@
 
 struct LightData
 {
-    //vectors
+    //light pos
     vec3 position;
-    vec3 luminance; // contains colour and brightness
-    vec3 direction; //spot and directional light direction
-    //spot light angle
-    float minAngle; //starts to fall off
-    float maxAngle; //finishes falling off
+    //starts to fall off
+    float minAngle; 
+    // contains colour and brightness
+    vec3 luminance; 
+    //finishes falling off
+    float maxAngle;
+    //spot and directional light direction
+    vec3 direction; 
     //light type (0 is directional light, 1 is point light, 2 is spotlight)
     int type; 
 };
@@ -145,8 +148,8 @@ void main()
 
     vec3 viewDirection = normalize(_CameraPosition - vertexOutput.fragPos);
 
-	vec3 outputColour = vec3(0);//_AmbientColour * ambientOcclusion * albedoColour;
-    for (int i = 0; i < 2; i++)
+	vec3 outputColour = _AmbientColour * ambientOcclusion * albedoColour;
+    for (int i = 0; i < LIGHT_COUNT; i++)
     {
         //note: should check type of light to get these 2 values
 		vec3 lightDirection;
@@ -183,7 +186,7 @@ void main()
     	float geometry = Geometry(nDV, nDL, roughness);
     	
 		vec3 s = (distribution*fresnel*geometry) 
-			/ (4 * nDV * nDL); //may need to add + 0.000001 to the denominator
+			/ (4 * nDV * nDL + 0.00001); //the 0.00001 is super important, it will completely break without it
 		
 		//fresnel basically works as the proportion of energy being reflected, kD will be the inverse of that (whatever energy was not reflected should be diffused) 
 		//except since metals don't have a diffuse term (aka the diffuse energy is 100% absorbed by the object), diffuse energy has to be multiplied by inverse metalness to basically lerp it to zero based on metalness
@@ -192,7 +195,7 @@ void main()
 
 		//final output luminance (timesed by nDL because i have no idea (it makes sense why the diffuse, but i thought the geometry value took that into account for specular))
 		outputColour += (s + kD * albedoColour / PI_VALUE) * lightPower * nDL;
-		//outputColour = vec3(lightPowerMultiplier);
+        //outputColour = vec3(geometry);
     }
     
 	//apparently this all needs to be gamma corrected?????

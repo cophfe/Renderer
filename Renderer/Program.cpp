@@ -111,14 +111,14 @@ void Program::Init()
 	MeshRendererComponent* soulSpearRenderer = soulSpear->AddComponent<MeshRendererComponent>();
 	soulSpearRenderer->Init(mesh, soulMaterial);
 	soulSpear->GetTransform().SetLocalPosition(Vector3(-2, -3, -10));
-
-	Material* sphereMat = Material::InitNew(*vertex, *fragment);
-	renderer.SetPBRValues(sphereMat);
-	Mesh* sphereMesh = MeshBuilder::LoadMeshFromPath("Models/sphere.obj");
-	GameObject* sphere = GameObject::Create();
-	sphere->AddComponent<MeshRendererComponent>()->Init(sphereMesh, sphereMat);
-	sphere->GetTransform().SetPosition(Vector3(0, 5, 0));
-
+	
+	//Material* sphereMat = Material::InitNew(*vertex, *fragment);
+	//renderer.SetPBRValues(sphereMat);
+	//Mesh* sphereMesh = MeshBuilder::LoadMeshFromPath("Models/sphere.obj");
+	//GameObject* sphere = GameObject::Create();
+	//sphere->AddComponent<MeshRendererComponent>()->Init(sphereMesh, sphereMat);
+	//sphere->GetTransform().SetPosition(Vector3(0, 5, 0));
+	//
 	Material* chestMat = Material::InitNew(*vertex, *fragment);
 	renderer.SetPBRValues(chestMat, 1.0f, "chest_albedo.png", "chest_normal.png", "chest_roughness.png", "chest_metalness.png", "chest_ao.png");
 	Mesh* chestMesh = MeshBuilder::LoadMeshFromPath("Models/chest.obj");
@@ -126,12 +126,12 @@ void Program::Init()
 	chest->AddComponent<MeshRendererComponent>()->Init(chestMesh, chestMat);
 	chest->GetTransform().SetPosition(Vector3(0, -5, 0));
 	
-	Material* hydrantMat = Material::InitNew(*vertex, *fragment);
-	renderer.SetPBRValues(hydrantMat, 1.0f, "fire_hydrant_albedo.png", "fire_hydrant_normal.png", "fire_hydrant_roughness.png", "fire_hydrant_metalness.png", "fire_hydrant_ao.png");
-	Mesh* hydrantMesh = MeshBuilder::LoadMeshFromPath("Models/fireHydrant.obj");
-	GameObject* hydrant = GameObject::Create();
-	hydrant->AddComponent<MeshRendererComponent>()->Init(hydrantMesh, hydrantMat);
-	hydrant->GetTransform().SetPosition(Vector3(4, -5, -6));
+	//Material* hydrantMat = Material::InitNew(*vertex, *fragment);
+	//renderer.SetPBRValues(hydrantMat, 1.0f, "fire_hydrant_albedo.png", "fire_hydrant_normal.png", "fire_hydrant_roughness.png", "fire_hydrant_metalness.png", "fire_hydrant_ao.png");
+	//Mesh* hydrantMesh = MeshBuilder::LoadMeshFromPath("Models/fireHydrant.obj");
+	//GameObject* hydrant = GameObject::Create();
+	//hydrant->AddComponent<MeshRendererComponent>()->Init(hydrantMesh, hydrantMat);
+	//hydrant->GetTransform().SetPosition(Vector3(4, -5, -6));
 	////TEMP - SET MATERIAL INFORMATION
 	//auto& materials = renderer.GetMaterials();
 	//for (size_t i = 0; i < materials.size(); i++)
@@ -150,9 +150,9 @@ void Program::InitGraphics()
 	//add sun
 	GameObject* sunObj = GameObject::Create();
 	auto* sun = sunObj->AddComponent<LightComponent>();
-	sun->Init(Vector3(1, 0.9568627f, 0.8392157f), LightType::DIRECTION);
-	sunObj->GetTransform().Rotate(glm::radians(50.0f), Vector3(1, 0, 0));
-	sunObj->GetTransform().Rotate(glm::radians(-30.0f), Vector3(0, 1, 0));
+	sun->Init(Vector3(1, 0.9568627f, 0.8392157f) * 20.0f, LightType::DIRECTION);
+	
+	sunObj->GetTransform().SetRotation(glm::quatLookAt(Vector3(3, -5, 0), Vector3(0, 1, 0)));
 
 	//setup camera
 	Vector2Int size;
@@ -161,8 +161,7 @@ void Program::InitGraphics()
 	camera->AddComponent<CameraComponent>()->Init(glm::radians(65.0f), size.x / (float)size.y);
 	//add camera light
 	auto* camLight = camera->AddComponent<LightComponent>();
-	camLight->Init(Vector3(1, 1, 1), LightType::POINT);
-	camLight->SetPointLightData(5);
+	camLight->Init(Vector3(1, 1, 1), 4, glm::radians(45.0f), glm::radians(8.0f), LightType::SPOTLIGHT);
 	//add mover
 	camera->AddComponent<CameraMoveComponent>()->Init(3, 1.06f, 4);
 }
@@ -183,10 +182,10 @@ void Program::Loop()
 {
 	while (!glfwWindowShouldClose(renderer.GetWindow()))
 	{
-		UpdateTime();
-		Render();
 		glfwPollEvents();
+		UpdateTime();
 		Update();
+		Render();
 	}
 }
 
@@ -233,7 +232,13 @@ void Program::UpdateTime()
 #pragma region Input 
 void Program::KeyPressed(int key)
 {
-	
+
+	if (GLFW_KEY_ENTER == key)
+	{
+		auto* gO = GameObject::Create();
+		gO->AddComponent<LightComponent>()->Init(Vector3(1, 0.9f, 0.8f), 4);
+		gO->GetTransform().SetPosition(renderer.GetMainCamera()->GetTransform().GetPosition());
+	}
 }
 
 void Program::KeyReleased(int key)
