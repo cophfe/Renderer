@@ -13,7 +13,8 @@ void LightComponent::Init(Vector3 luminance, LightType type)
 void LightComponent::Init(Vector3 luminance, float radius, float minAngleRad, float falloffRadians, LightType type)
 {
 	this->luminance = luminance;
-	lightData.luminance = luminance * radius * radius;
+	lightData.radius = radius;
+	lightData.luminance = luminance;
 	this->type = type;
 	lightData.type = (int)type;
 	
@@ -25,7 +26,8 @@ void LightComponent::Init(Vector3 luminance, float radius, float minAngleRad, fl
 void LightComponent::Init(Vector3 luminance, float radius, LightType type)
 {
 	this->luminance = luminance;
-	lightData.luminance = luminance * radius * radius;
+	lightData.radius = radius;
+	lightData.luminance = luminance;
 	this->type = type;
 	lightData.type = (int)type;
 	Program::GetInstance()->GetRenderer().UpdateLights();

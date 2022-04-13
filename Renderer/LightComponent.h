@@ -16,6 +16,10 @@ struct LightDataStruct //aligned to 16
 	float maxAngle;
 	Vector3 direction;
 	int type = 0;
+	float radius = 1;
+	int : 32;
+	int : 32;
+	int : 32;
 };
 
 class LightComponent : public Component

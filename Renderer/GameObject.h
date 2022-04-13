@@ -55,7 +55,7 @@ inline T* GameObject::AddComponent() //this will be broken if the type given doe
 	((Component*)component)->ConnectGameObject(this);
 	components.push_back(component);
 
-	component->SetEnabled(true);
+	//component->SetEnabled(true);
 
 	return component;
 }

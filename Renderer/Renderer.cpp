@@ -235,7 +235,7 @@ void Renderer::FindMainCamera()
 			CameraComponent* cache = cameras[0];
 			cameras[0] = cameras[i];
 			cameras[i] = cache;
-		}
+		} 
 	}
 }
 
@@ -266,13 +266,13 @@ void Renderer::SetPBRValues(Material* pbrMaterial, float roughnessMultiplier, co
 		if (defaultMetallic)
 			pbrMaterial->SetTextureSampler("_MetallicMap", textureManager.LoadTexture("white.png"));
 		else
-			pbrMaterial->SetTextureSampler("_MetallicMap", textureManager.LoadTexture("black.png"));
+			pbrMaterial->SetTextureSampler("_MetallicMap", nullptr);
 	}
 
 	if (ao)
 		pbrMaterial->SetTextureSampler("_AmbientOcclusionMap", textureManager.LoadTexture(ao));
 	else
-		pbrMaterial->SetTextureSampler("_MetallicMap", textureManager.LoadTexture("white.png"));
+		pbrMaterial->SetTextureSampler("_AmbientOcclusionMap", textureManager.LoadTexture("white.png"));
 
 	pbrMaterial->SetUniform("_Material.roughness", roughnessMultiplier);
 }

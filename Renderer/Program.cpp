@@ -28,6 +28,8 @@ void Program::Run()
 void Program::RegisterGameObject(GameObject* gameObject)
 {
 	gameObjects.push_back(gameObject);
+	if (initiated)
+		newGameObjects.push_back(gameObject);
 }
 
 void Program::DeregisterGameObject(GameObject* gameObject)
@@ -112,13 +114,13 @@ void Program::Init()
 	soulSpearRenderer->Init(mesh, soulMaterial);
 	soulSpear->GetTransform().SetLocalPosition(Vector3(-2, -3, -10));
 	
-	//Material* sphereMat = Material::InitNew(*vertex, *fragment);
-	//renderer.SetPBRValues(sphereMat);
-	//Mesh* sphereMesh = MeshBuilder::LoadMeshFromPath("Models/sphere.obj");
-	//GameObject* sphere = GameObject::Create();
-	//sphere->AddComponent<MeshRendererComponent>()->Init(sphereMesh, sphereMat);
-	//sphere->GetTransform().SetPosition(Vector3(0, 5, 0));
-	//
+	Material* sphereMat = Material::InitNew(*vertex, *fragment);
+	renderer.SetPBRValues(sphereMat);
+	Mesh* sphereMesh = MeshBuilder::LoadMeshFromPath("Models/sphere.obj");
+	GameObject* sphere = GameObject::Create();
+	sphere->AddComponent<MeshRendererComponent>()->Init(sphereMesh, sphereMat);
+	sphere->GetTransform().SetPosition(Vector3(0, 5, 0));
+	
 	Material* chestMat = Material::InitNew(*vertex, *fragment);
 	renderer.SetPBRValues(chestMat, 1.0f, "chest_albedo.png", "chest_normal.png", "chest_roughness.png", "chest_metalness.png", "chest_ao.png");
 	Mesh* chestMesh = MeshBuilder::LoadMeshFromPath("Models/chest.obj");
@@ -141,6 +143,20 @@ void Program::Init()
 	//	materials[i]->SetUniform("_Material.specularity", 0.6f);
 	//}
 	////
+
+	initiated = true;
+}
+
+void Program::Start()
+{
+	if (gameObjects.size() > 0)
+	{
+		for (auto* gameObject : newGameObjects)
+		{
+			gameObject->Start();
+		}
+		newGameObjects.clear();
+	}
 }
 
 void Program::InitGraphics()
@@ -150,9 +166,9 @@ void Program::InitGraphics()
 	//add sun
 	GameObject* sunObj = GameObject::Create();
 	auto* sun = sunObj->AddComponent<LightComponent>();
-	sun->Init(Vector3(1, 0.9568627f, 0.8392157f) * 20.0f, LightType::DIRECTION);
+	sun->Init(Vector3(1, 0.9568627f, 0.8392157f) * 10.0f, LightType::DIRECTION);
 	
-	sunObj->GetTransform().SetRotation(glm::quatLookAt(Vector3(3, -5, 0), Vector3(0, 1, 0)));
+	sunObj->GetTransform().SetRotation(glm::quatLookAt(glm::normalize(Vector3(3, 5, 0)), Vector3(0, 1, 0)));
 
 	//setup camera
 	Vector2Int size;
@@ -161,7 +177,7 @@ void Program::InitGraphics()
 	camera->AddComponent<CameraComponent>()->Init(glm::radians(65.0f), size.x / (float)size.y);
 	//add camera light
 	auto* camLight = camera->AddComponent<LightComponent>();
-	camLight->Init(Vector3(1, 1, 1), 4, glm::radians(45.0f), glm::radians(8.0f), LightType::SPOTLIGHT);
+	camLight->Init(Vector3(1, 1, 1) * 10.0f, 9, glm::radians(20.0f), glm::radians(8.0f), LightType::SPOTLIGHT);
 	//add mover
 	camera->AddComponent<CameraMoveComponent>()->Init(3, 1.06f, 4);
 }
@@ -180,8 +196,15 @@ void Program::InitCallbacks()
 
 void Program::Loop()
 {
+	//start for the first gameobjects operates on the entire gameobject list
+	for (auto* gameObject : gameObjects)
+	{
+		gameObject->Start();
+	}
+
 	while (!glfwWindowShouldClose(renderer.GetWindow()))
 	{
+		Start();
 		glfwPollEvents();
 		UpdateTime();
 		Update();

@@ -18,6 +18,7 @@ struct LightData
     vec3 direction; 
     //light type (0 is directional light, 1 is point light, 2 is spotlight)
     int type; 
+    float radius; //light radius used for falloff
 };
 
 struct V2F {
@@ -88,15 +89,15 @@ float Distribution (float nDH, float roughness)
     //return pow( E_VALUE, ex) / (r2 * nDH2 * nDH2);
 }
 
-vec3 Fresnel(vec3 normal, vec3 halfDir, vec3 f0)
+vec3 Fresnel(vec3 viewDir, vec3 halfDir, vec3 r0)
 {
     //f0 is basically the base surface reflectance
     //I'm using this model because learnopengl says it allows 
     //  for transitioning between metallic and non metallic better (physically, that isn't a thing, but we dealing with pixels here)
 
     //pass in vec3 normal, vec3 halfDir (return vec3)
-    float oneMinusCosTheta = clamp(1 - max(dot(normal, halfDir), 0), 0, 1);
-    return f0 + (1.0 - f0) * pow(oneMinusCosTheta, 5.0);
+    float cosTheta = max(dot(viewDir, halfDir), 0);
+    return r0 + (1.0 - r0) * pow(1 - cosTheta, 5.0);
 
     //pass in vec3 normal, vec3 viewDir, float f0 (return float)
     // float nDV = 1.0 - dot(normal, viewDir);
@@ -108,7 +109,7 @@ float Geometry(float nDV, float nDL, float roughness)
     //here is shlikk beckmann + ggx function used in smith 
     //remapped roughness
     float k = roughness + 1;
-    k = k * k / 8.0;
+    k = (k * k) / 8.0;
     //k with image based lighting:
     //float k = roughness * roughness / 2
     return (nDV / (nDV * (1.0 - k) + k)) * (nDL / (nDL * (1.0 - k) + k));
@@ -123,7 +124,11 @@ float Geometry(float nDV, float nDL, float roughness)
 float CalculateAttenuation(LightData light)
 {
     float dist = length(light.position - vertexOutput.fragPos);
-    return  1.0 / (dist * dist);
+    //return  1.0 / (dist * dist);
+
+    //using the model from UE4
+    float falloff = clamp(pow(1 - pow(dist/light.radius, 4), 2), 0, 1) / (pow(dist, 2) + 1);
+    return falloff;
 }
 
 //for spotlights
@@ -147,6 +152,8 @@ void main()
 	vec3 normalWS = normalize(vertexOutput.matrixTBN * normalTS); //TBN Matrix is in world space
 
     vec3 viewDirection = normalize(_CameraPosition - vertexOutput.fragPos);
+    float nDV = max(dot(normalWS, viewDirection), 0.0);
+    vec3 r0 = mix(vec3(0.04), albedoColour, metallicity);
 
 	vec3 outputColour = _AmbientColour * ambientOcclusion * albedoColour;
     for (int i = 0; i < LIGHT_COUNT; i++)
@@ -160,7 +167,7 @@ void main()
 		switch(_Lights[i].type)
         {
             case 0: // directional light
-			lightDirection = _Lights[i].direction;
+			lightDirection = -_Lights[i].direction;
             break;
 
             case 1: // point light
@@ -177,17 +184,20 @@ void main()
 
     	vec3 halfDir = normalize(lightDirection + viewDirection);    
         float nDH = max(dot(normalWS, halfDir), 0.0);
-        float nDV = max(dot(normalWS, viewDirection), 0.0);
         float nDL = max(dot(normalWS, lightDirection), 0.0);
-    	vec3 f0 = mix(vec3(0.04), albedoColour, vec3(metallicity));
 
     	float distribution = Distribution(nDH, roughness);
-    	vec3 fresnel = Fresnel(normalWS, viewDirection, f0);
+        //this fresnel literally doesn't take into account normal so it doesn't make sense that it works
+        //vec3 fresnel = Fresnel(viewDirection, halfDir, f0);  and it doesn't work, obviously.
+        vec3 fresnel = Fresnel(normalWS, halfDir, r0);
     	float geometry = Geometry(nDV, nDL, roughness);
     	
+        //float oneMinusCosTheta = 1 - max(dot(viewDir, halfDir), 0);
+        // return f0 + (1.0 - f0) * pow(oneMinusCosTheta, 5.0);
+
 		vec3 s = (distribution*fresnel*geometry) 
-			/ (4 * nDV * nDL + 0.00001); //the 0.00001 is super important, it will completely break without it
-		
+			/ max(4 * nDV * nDL, 0.00001); //the 0.00001 is super important, it will have negative values without it
+    
 		//fresnel basically works as the proportion of energy being reflected, kD will be the inverse of that (whatever energy was not reflected should be diffused) 
 		//except since metals don't have a diffuse term (aka the diffuse energy is 100% absorbed by the object), diffuse energy has to be multiplied by inverse metalness to basically lerp it to zero based on metalness
 		//now we don't need a seperate pipeline for metal and non metal stuff, and they can be lerped between for smooth edges n stuff (aka physics got absolutely scammed, hooray)
@@ -195,7 +205,7 @@ void main()
 
 		//final output luminance (timesed by nDL because i have no idea (it makes sense why the diffuse, but i thought the geometry value took that into account for specular))
 		outputColour += (s + kD * albedoColour / PI_VALUE) * lightPower * nDL;
-        //outputColour = vec3(geometry);
+        //outputColour = fresnel;
     }
     
 	//apparently this all needs to be gamma corrected?????

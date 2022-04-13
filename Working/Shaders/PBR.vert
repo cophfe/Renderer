@@ -37,10 +37,12 @@ void main()
 
     gl_Position = _ViewProjectionMatrix * worldSpacePosition;
 
-    //get tbn matrix (IN WORLDSPACE)
-    //apparently usually things are transformed into tangent space and not the other way around. in this case, the inverse tbn matrix is just transpose(TBNMatrix)
+    //get tbn matrix (TANGENTSPACE TO WORLDSPACE)
+    //the tbn matrix is being re-orthagonalized because some models i tested were very broken without this
     vec3 modelN =   normalize(vec3(_ModelMatrix * vec4(normal, 0.0)));
     vec3 modelT =   normalize(vec3(_ModelMatrix * vec4(tangent, 0.0)));
-    vec3 modelBiT = normalize(vec3(_ModelMatrix * vec4(bitangent, 0.0)));
+    modelT = normalize(modelT - dot(modelT, modelN) * modelN);
+    vec3 modelBiT = cross(modelN, modelT); //this will work always since everything is now guaranteed orthagonal
+    //vec3 modelBiT = normalize(vec3(_ModelMatrix * vec4(bitangent, 0.0)));
     vertexOutput.matrixTBN = mat3(modelT, modelBiT, modelN);
 }

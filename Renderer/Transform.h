@@ -20,9 +20,9 @@ public:
 	inline void LocalRotate(float rotation, const Vector3& axis) { this->rotation = glm::angleAxis(rotation, axis) * this->rotation; UpdateLocalMatrix(); }
 	inline void LocalMove(const Vector3& move) { position += move; UpdateLocalMatrix(); }
 
-	Vector3&& GetLocalForward() const;
-	Vector3&& GetLocalUp() const;
-	Vector3&& GetLocalRight() const;
+	const Vector3& GetLocalForward() const;
+	const Vector3& GetLocalUp() const;
+	const Vector3& GetLocalRight() const;
 	inline const Vector3& GetLocalPosition() const { return position; }
 	inline const Quaternion& GetLocalRotation() const { return rotation; }
 	inline const Vector3& GetLocalScale() const { return scale; }
@@ -38,23 +38,23 @@ public:
 	void Rotate(float rotation, const Vector3& axis);
 	void Move(const Vector3& move);
 
-	Vector3&& GetForward() const;
-	Vector3&& GetUp() const;
-	Vector3&& GetRight() const;
-	Vector3&& GetPosition() const;
-	Quaternion&& GetRotation() const;
-	Vector3&& GetScale() const;
+	const Vector3& GetForward() const;
+	const Vector3& GetUp() const;
+	const Vector3& GetRight() const;
+	const Vector3& GetPosition() const;
+	Quaternion GetRotation() const;
+	Vector3 GetScale() const;
 	inline const Matrix4x4& GetGlobalMatrix() const { return globalMatrix; }
-	Matrix4x4&& GetGlobalToLocalMatrix() const;
+	Matrix4x4 GetGlobalToLocalMatrix() const;
 	//
 
 	//transform
-	Vector3&& TransformPoint(const Vector3& point) const;
-	Vector3&& InverseTransformPoint(const Vector3& point) const;
-	Quaternion&& TransformRotation(const Quaternion& rotation) const;
-	Quaternion&& InverseTransformRotation(const Quaternion& rotation) const;
-	Vector3&& TransformDirection(const Vector3& direction) const;
-	Vector3&& InverseTransformDirection(const Vector3& direction) const;
+	Vector3 TransformPoint(const Vector3& point) const;
+	Vector3 InverseTransformPoint(const Vector3& point) const;
+	Quaternion TransformRotation(const Quaternion& rotation) const;
+	Quaternion InverseTransformRotation(const Quaternion& rotation) const;
+	Vector3 TransformDirection(const Vector3& direction) const;
+	Vector3 InverseTransformDirection(const Vector3& direction) const;
 	//
 
 	//Hierarchy

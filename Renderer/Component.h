@@ -29,7 +29,7 @@ protected:
 	void ConnectGameObject(GameObject* connected);
 
 private:
-	bool enabled;
+	bool enabled = true;
 	bool initiated;
 	GameObject* gameObject;
 };

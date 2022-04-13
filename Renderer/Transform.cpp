@@ -60,17 +60,17 @@ void Transform::UpdateLocalMatrix()
 	UpdateGlobalMatrix();
 }
 
-Vector3&& Transform::GetLocalForward() const
+const Vector3& Transform::GetLocalForward() const
 {
 	return localMatrix[2];
 }
 
-Vector3&& Transform::GetLocalUp() const
+const Vector3& Transform::GetLocalUp() const
 {
 	return localMatrix[1];
 }
 
-Vector3&& Transform::GetLocalRight() const
+const Vector3& Transform::GetLocalRight() const
 {
 	return localMatrix[0];
 }
@@ -128,27 +128,28 @@ void Transform::Move(const Vector3& move)
 	UpdateLocalMatrix();
 }
 
-Vector3&& Transform::GetForward() const
+const Vector3& Transform::GetForward() const
 {
 	return globalMatrix[2];
 }
 
-Vector3&& Transform::GetUp() const
+const Vector3& Transform::GetUp() const
 {
 	return globalMatrix[1];
 }
 
-Vector3&& Transform::GetRight() const
+const Vector3& Transform::GetRight() const
 {
 	return globalMatrix[0];
 }
 
-Vector3&& Transform::GetPosition() const
+const Vector3& Transform::GetPosition() const
 {
-	return Vector3(globalMatrix[3]);
+	//this is a sin
+	return *(Vector3*)(&globalMatrix[3]);
 }
 
-Quaternion&& Transform::GetRotation() const
+Quaternion Transform::GetRotation() const
 {
 	//madre de dios, este es muy caro
 
@@ -162,7 +163,7 @@ Quaternion&& Transform::GetRotation() const
 	return glm::quat_cast(rotation);
 }
 
-Vector3&& Transform::GetScale() const
+Vector3 Transform::GetScale() const
 {
 	return Vector3(glm::length(globalMatrix[0]),
 		glm::length(globalMatrix[1]),
@@ -172,32 +173,32 @@ Vector3&& Transform::GetScale() const
 
 #pragma region Transform
 
-Matrix4x4&& Transform::GetGlobalToLocalMatrix() const
+Matrix4x4 Transform::GetGlobalToLocalMatrix() const
 {
 	return glm::inverse(globalMatrix);
 }
-Vector3&& Transform::TransformPoint(const Vector3& point) const
+Vector3 Transform::TransformPoint(const Vector3& point) const
 {
 	return Vector4(point, 1.0) * globalMatrix;
 }
-Vector3&& Transform::InverseTransformPoint(const Vector3& point) const
+Vector3 Transform::InverseTransformPoint(const Vector3& point) const
 {
 	return Vector4(point, 1.0) * GetGlobalToLocalMatrix();
 }
-Quaternion&& Transform::TransformRotation(const Quaternion& rotation) const
+Quaternion Transform::TransformRotation(const Quaternion& rotation) const
 {
 	return rotation * GetRotation();
 }
-Quaternion&& Transform::InverseTransformRotation(const Quaternion& rotation) const
+Quaternion Transform::InverseTransformRotation(const Quaternion& rotation) const
 {
 	Quaternion inverseRotation = glm::inverse(GetRotation());
 	return rotation * inverseRotation;
 }
-Vector3&& Transform::TransformDirection(const Vector3& direction) const
+Vector3 Transform::TransformDirection(const Vector3& direction) const
 {
 	return Vector4(direction, 0.0) * globalMatrix;
 }
-Vector3&& Transform::InverseTransformDirection(const Vector3& direction) const
+Vector3 Transform::InverseTransformDirection(const Vector3& direction) const
 {
 	return Vector4(direction, 0.0) * GetGlobalToLocalMatrix();
 }

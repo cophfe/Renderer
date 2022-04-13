@@ -48,7 +48,7 @@ public:
 	Renderer(const Renderer& other) = delete;
 	Renderer& operator= (const Renderer& other) = delete;
 
-	Vector4 ambientColour = Vector4(0.05f, 0.05f, 0.05f, 1.0f);
+	Vector4 ambientColour = 0.08f * Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	void SetPBRValues(Material* pbrMaterial, float roughnessMultiplier = 0.5f, const char* albedo = nullptr, const char* normal = nullptr, const char* roughness = nullptr, const char* metallic = nullptr, const char* ao = nullptr, bool defaultMetallic = false);
 private:

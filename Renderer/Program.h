@@ -39,6 +39,7 @@ private:
 	static Program* instance;
 
 	void Init();
+	void Start();
 	void InitGraphics();
 	void InitCallbacks();
 	void Loop();
@@ -67,12 +68,15 @@ private:
 
 	Renderer renderer;
 	
-	std::vector<GameObject*> gameObjects = std::vector<GameObject*>();;
+	std::vector<GameObject*> gameObjects = std::vector<GameObject*>();
 	std::vector<Transform*> children = std::vector<Transform*>();
 
+	std::vector<GameObject*> newGameObjects = std::vector<GameObject*>();
+	std::vector<Component*> newComponents = std::vector<Component*>(); //should be used when a game object has been created and new components have been added to it later, after start() has already been called on the gameobject
 	double deltaTime;
 	double lastTime;
 	bool windowFocused = true;
+	bool initiated;
 
 	const float shaderRecompileTime = 1;
 	float shaderRecompileTimer;
