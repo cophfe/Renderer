@@ -15,10 +15,36 @@ Shader* Shader::Init(const char* path, Type type)
 	this->path = path;
 
 	lastTime = std::filesystem::last_write_time(path);
-	Compile(false);
+	CompileFromPath(false);
 	loaded = true;
 
-	Program::GetInstance()->GetRenderer().RegisterShader(this);
+	return this;
+}
+
+Shader* Shader::InitRaw(const char* shader, Type type)
+{
+	if (loaded)
+	{
+		auto msg = "Failed to create shader using path: " + std::string(path) + ": Shader used was already loaded.";
+		throw std::runtime_error(msg);
+	}
+	id = glCreateShader((GLenum)type);
+	this->path = "";
+	glShaderSource(id, 1, &shader, nullptr);
+	glCompileShader(id);
+
+	GLint success = 0;
+	glGetShaderiv(id, GL_COMPILE_STATUS, &success);
+	if (!success)
+	{
+		GLchar log[512];
+		glGetShaderInfoLog(id, 512, nullptr, log);
+		loaded = false;
+		auto msg = "Failed to compile shader with id " + std::to_string(id) + ":\n" + log;
+		throw std::runtime_error(msg);
+	}
+	loaded = true;
+
 	return this;
 }
 
@@ -26,11 +52,31 @@ Shader* Shader::InitNew(const char* path, Type type)
 {
 	Shader* shader = new Shader();
 	shader->Init(path, type);
+
+	auto& r = Program::GetInstance()->GetRenderer();
+	if (r.GetAutoRegisterShaders())
+		r.RegisterShader(shader);
+
 	return shader;
 }
 
-bool Shader::Compile(bool recompile) //based on simpleframework
+Shader* Shader::InitNewRaw(const char* shader, Type type)
 {
+	Shader* shaderr = new Shader();
+	shaderr->InitRaw(shader, type);
+
+	auto& r = Program::GetInstance()->GetRenderer();
+	if (r.GetAutoRegisterShaders())
+		r.RegisterShader(shaderr);
+
+	return shaderr;
+}
+
+bool Shader::CompileFromPath(bool recompile) //based on simpleframework
+{
+	if (path == "")
+		return false;
+
 	std::string shader = LoadFileAsString(path).c_str();
 	const char* cStr = shader.c_str();
 
@@ -72,7 +118,7 @@ bool Shader::ShouldRecompile()
 
 bool Shader::Recompile()
 {
-	return Compile(true);
+	return CompileFromPath(true);
 }
 
 std::string Shader::LoadFileAsString(std::string path)

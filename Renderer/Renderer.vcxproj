@@ -155,6 +155,7 @@
     <ClCompile Include="CameraComponent.cpp" />
     <ClCompile Include="CameraMoveComponent.cpp" />
     <ClCompile Include="Component.cpp" />
+    <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="LightComponent.cpp" />
@@ -179,6 +180,7 @@
     <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="CameraMoveComponent.h" />
     <ClInclude Include="Component.h" />
+    <ClInclude Include="FrameBuffer.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="glad.h" />
     <ClInclude Include="Graphics.h" />

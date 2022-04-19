@@ -8,41 +8,71 @@
 
 Texture2D* Texture2D::Init(const char* path,
 	unsigned int mipMapCount, TextureFiltering textureFiltering,
-	TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode)
-{
+	TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode, GLenum internalFormat)
+{	
+	glGenTextures(1, &id);
+	glBindTexture(GL_TEXTURE_2D, id);
 	int channels = 0;
 	//stbi_set_flip_vertically_on_load(true);
 	unsigned char* data = stbi_load(path, &size.x, &size.y, &channels, 4);
-
 	if (data == nullptr)
 	{
 		throw "Image data failed to load";
 	}
-
-	glGenTextures(1, &id);
-	glBindTexture(GL_TEXTURE_2D, id);
-	glTexImage2D(GL_TEXTURE_2D, mipMapCount, GL_RGBA, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	
+	this->mipMapCount = mipMapCount;
+	this->internalFormat = internalFormat;
+	glTexImage2D(GL_TEXTURE_2D, mipMapCount, internalFormat, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	//DebugDraw(data);
+	stbi_image_free(data);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	SetFiltering(textureFiltering);
 	SetWrapMode(wrapMode);
 	SetFiltering(mipMapFiltering);
-
-	//DebugDraw(data);
-
-	stbi_image_free(data);
-
-	this->format = format;
 	loaded = true;
+	return this;
+}
+
+Texture2D* Texture2D::InitEmpty(Vector2Int size, GLenum internalFormat, unsigned int mipMapCount, TextureFiltering textureFiltering, 
+	TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode)
+{
+	glGenTextures(1, &id);
+	glBindTexture(GL_TEXTURE_2D, id);
+
+	GLenum format;
+	if (internalFormat == GL_DEPTH_COMPONENT || internalFormat == GL_DEPTH_COMPONENT16 || internalFormat == GL_DEPTH_COMPONENT24 || internalFormat == GL_DEPTH_COMPONENT32F)
+		format = GL_DEPTH_COMPONENT;
+	else
+		format = GL_RGBA;
+
+	
+	glTexImage2D(GL_TEXTURE_2D, mipMapCount, internalFormat, size.x, size.y, 0, format, GL_UNSIGNED_BYTE, NULL);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	SetFiltering(textureFiltering);
+	SetWrapMode(wrapMode);
+	SetFiltering(mipMapFiltering);
+	loaded = true;
+	this->mipMapCount = mipMapCount;
+	this->internalFormat = internalFormat;
+	this->size = size;
 	return this;
 }
 
 Texture2D* Texture2D::InitNew(const char* path,
 	unsigned int mipMapCount, TextureFiltering textureFiltering,
-	TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode)
+	TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode, GLenum internalFormat)
 {
 	Texture2D* tex = new Texture2D();
-	tex->Init(path, mipMapCount, textureFiltering, mipMapFiltering, wrapMode);
+	tex->Init(path, mipMapCount, textureFiltering, mipMapFiltering, wrapMode, internalFormat);
+	return tex;
+}
+
+Texture2D* Texture2D::InitNewEmpty(Vector2Int size, GLenum internalFormat, unsigned int mipMapCount, TextureFiltering textureFiltering, 
+	TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode)
+{ 
+	Texture2D* tex = new Texture2D();
+	tex->InitEmpty(size, internalFormat, mipMapCount, textureFiltering, mipMapFiltering, wrapMode);
 	return tex;
 }
 
@@ -51,6 +81,7 @@ void Texture2D::SetWrapMode(TextureWrapMode wrapMode)
 	glBindTexture(GL_TEXTURE_2D, id);
 
 	this->wrapMode = wrapMode;
+	//idk which one of these is z (and I don't need to set), so I'll just set all of em
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, (GLenum)wrapMode);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (GLenum)wrapMode);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (GLenum)wrapMode);
@@ -72,14 +103,31 @@ void Texture2D::SetFiltering(TextureMipMapFiltering filtering)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLenum)filtering);
 }
 
+void Texture2D::Resize(Vector2Int newSize)
+{
+	if (size == newSize)
+		return;
+
+	GLenum format;
+	if (internalFormat == GL_DEPTH_COMPONENT || internalFormat == GL_DEPTH_COMPONENT16 || internalFormat == GL_DEPTH_COMPONENT24 || internalFormat == GL_DEPTH_COMPONENT32F)
+		format = GL_DEPTH_COMPONENT;
+	else
+		format = GL_RGBA;
+
+	glBindTexture(GL_TEXTURE_2D, id);
+	glTexImage2D(GL_TEXTURE_2D, mipMapCount, internalFormat, size.x, size.y, 0, format, GL_UNSIGNED_BYTE, NULL);
+	size = newSize;
+	
+}
+
 Texture2D::Texture2D(Texture2D&& other) noexcept
 {
 	id = other.id;
 	loaded = other.loaded;
 	size = other.size;
-	format = other.format;
+	mipMapCount = other.mipMapCount;
+	internalFormat = other.internalFormat;
 	filtering = other.filtering;
-	mipMapFiltering = other.mipMapFiltering;
 	wrapMode = other.wrapMode;
 
 	other.loaded = false;
@@ -95,9 +143,9 @@ Texture2D& Texture2D::operator=(Texture2D&& other) noexcept
 	id = other.id;
 	loaded = other.loaded;
 	size = other.size;
-	format = other.format;
+	mipMapCount = other.mipMapCount;
+	internalFormat = other.internalFormat;
 	filtering = other.filtering;
-	mipMapFiltering = other.mipMapFiltering;
 	wrapMode = other.wrapMode;
 
 	other.loaded = false;

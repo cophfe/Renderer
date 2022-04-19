@@ -73,9 +73,9 @@ public:
 	Material(const Material& other) = delete;
 	Material& operator= (const Material& other) = delete;
 private:
-	static uint32_t materialIDCounter;
+	static int32_t materialIDCounter;
 	static GLuint currentMaterial;
-	uint32_t materialID;
+	int32_t materialID;
 
 	GLuint programID;
 	bool loaded;

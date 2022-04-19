@@ -10,17 +10,24 @@
 #include "MeshRendererComponent.h"
 #include "LightComponent.h"
 #include "CameraComponent.h"
+#include "FrameBuffer.h"
+#include "MeshPrimitive.h"
 
 class Renderer
 {
 public:
 	void Init(const char* texturePath);
 	void Cleanup();
-	void RecompileShaders();
 
 	void UpdateUniformBuffers();
 	void Render();
-	
+	void OnWindowResize(Vector2Int newSize);
+
+	//set whether materials, shaders or meshes initiated with InitNew are automatically registered for rendering or not
+	void SetAutoRegister(bool materials, bool shaders, bool meshes);
+	bool GetAutoRegisterMaterials() { return autoRegisterMat; }
+	bool GetAutoRegisterShaders() { return autoRegisterShad; }
+	bool GetAutoRegisterMeshes() { return autoRegisterMesh; }
 	//note: these should definitely check if the things are already in the array
 	//called by respective classes on init
 	Material* RegisterMaterial(Material* mat);
@@ -50,13 +57,14 @@ public:
 
 	Vector4 ambientColour = 0.08f * Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	void SetPBRValues(Material* pbrMaterial, float roughnessMultiplier = 0.5f, const char* albedo = nullptr, const char* normal = nullptr, const char* roughness = nullptr, const char* metallic = nullptr, const char* ao = nullptr, bool defaultMetallic = false);
+	void SetPBRValues(Material* pbrMaterial, float roughnessMultiplier = 0.5f, const char* albedo = nullptr, 
+		const char* normal = nullptr, const char* roughness = nullptr, const char* metallic = nullptr, 
+		const char* ao = nullptr, bool defaultMetallic = false, bool setIrradianceMap = true);
 private:
 	GLFWwindow* window;
 
-	const float shaderRecompileTime = 1;
-	float shaderRecompileTimer;
 	TextureManager textureManager;
+	bool autoRegisterMat, autoRegisterShad, autoRegisterMesh;
 	std::vector<Shader*> shaders;
 	std::vector<Material*> materials;
 	std::vector<Mesh*> meshes;
@@ -70,26 +78,35 @@ private:
 	UniformBuffer cameraBuffer;
 	UniformBuffer lightingBuffer;
 
+	//these ones are stored seperately because I don't want these to be accessed outside of this class
+	FrameBuffer frameBuffer;
+	Material frameMaterial;
+	Mesh frameQuad;
+	Material skyboxMaterial;
+	Texture2D irradienceMap;
+	Texture2D environmentMap;
+
 	struct CameraBufferStruct {
-		Matrix4x4 ViewProjectionMatrix;
-		Matrix4x4 ProjectionMatrix;
-		Matrix4x4 ViewMatrix;
-		Matrix4x4 InverseViewMatrix;
-		Vector4 cameraPosition;
+		Matrix4x4 viewProjectionMatrix;
+		Matrix4x4 projectionMatrix;
+		Matrix4x4 viewMatrix;
+		Matrix4x4 inverseViewMatrix;
+		Vector3 cameraPosition;
+		float aspect;
+		float fov;
 	};
 
 	struct TimingBufferStruct {
-		float Time;
-		float DeltaTime;
+		float time;
+		float deltaTime;
 	};
 
 	struct LightingBufferStruct {
 		LightDataStruct lights[8];
-
 		Vector3 ambientColour;
 	};
 
-	//uniform buffers (if stored)
+	//stored uniform buffers
 	LightingBufferStruct lightingBufferData;
 };
 

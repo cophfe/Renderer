@@ -12,7 +12,7 @@ public:
 	void Init(const char* texturePath, unsigned int autoMipMapCount = 0, TextureFiltering autoTextureFiltering = TextureFiltering::Linear,
 		TextureMipMapFiltering autoMipMapFiltering = TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode autoWrapMode = TextureWrapMode::Wrap);
 	Texture2D* LoadTextureParams(const char* name, unsigned int mipMapCount = 0, TextureFiltering textureFiltering = TextureFiltering::Linear,
-		TextureMipMapFiltering mipMapFiltering = TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode wrapMode = TextureWrapMode::Wrap);
+		TextureMipMapFiltering mipMapFiltering = TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode wrapMode = TextureWrapMode::Wrap, GLenum internalFormat = GL_RGBA);
 	Texture2D* LoadTexture(const char* name);
 	
 	void Unload();

@@ -102,18 +102,6 @@ void Program::Init()
 		gO->GetTransform().SetLocalPosition(Vector3(4, 0, -(1.5 * i)));
 	}
 
-	//make soulspear
-	mesh = MeshBuilder::LoadMeshFromPath("Models/soulspear.obj");
-
-
-	Material* soulMaterial = Material::InitNew(*vertex, *fragment);
-	renderer.SetPBRValues(soulMaterial, 0.7f, "soulspear_diffuse.tga", "soulspear_normal.tga");
-
-	auto soulSpear = GameObject::Create();
-	MeshRendererComponent* soulSpearRenderer = soulSpear->AddComponent<MeshRendererComponent>();
-	soulSpearRenderer->Init(mesh, soulMaterial);
-	soulSpear->GetTransform().SetLocalPosition(Vector3(-2, -3, -10));
-	
 	Material* sphereMat = Material::InitNew(*vertex, *fragment);
 	renderer.SetPBRValues(sphereMat);
 	Mesh* sphereMesh = MeshBuilder::LoadMeshFromPath("Models/sphere.obj");
@@ -128,21 +116,12 @@ void Program::Init()
 	chest->AddComponent<MeshRendererComponent>()->Init(chestMesh, chestMat);
 	chest->GetTransform().SetPosition(Vector3(0, -5, 0));
 	
-	//Material* hydrantMat = Material::InitNew(*vertex, *fragment);
-	//renderer.SetPBRValues(hydrantMat, 1.0f, "fire_hydrant_albedo.png", "fire_hydrant_normal.png", "fire_hydrant_roughness.png", "fire_hydrant_metalness.png", "fire_hydrant_ao.png");
-	//Mesh* hydrantMesh = MeshBuilder::LoadMeshFromPath("Models/fireHydrant.obj");
-	//GameObject* hydrant = GameObject::Create();
-	//hydrant->AddComponent<MeshRendererComponent>()->Init(hydrantMesh, hydrantMat);
-	//hydrant->GetTransform().SetPosition(Vector3(4, -5, -6));
-	////TEMP - SET MATERIAL INFORMATION
-	//auto& materials = renderer.GetMaterials();
-	//for (size_t i = 0; i < materials.size(); i++)
-	//{
-	//	//non pbr
-	//	materials[i]->SetUniform("_Material.shininess", 32.0f);
-	//	materials[i]->SetUniform("_Material.specularity", 0.6f);
-	//}
-	////
+	Material* hydrantMat = Material::InitNew(*vertex, *fragment);
+	renderer.SetPBRValues(hydrantMat, 1.0f, "fire_hydrant_albedo.png", "fire_hydrant_normal.png", "fire_hydrant_roughness.png", "fire_hydrant_metalness.png", "fire_hydrant_ao.png");
+	Mesh* hydrantMesh = MeshBuilder::LoadMeshFromPath("Models/fireHydrant.obj");
+	GameObject* hydrant = GameObject::Create();
+	hydrant->AddComponent<MeshRendererComponent>()->Init(hydrantMesh, hydrantMat);
+	hydrant->GetTransform().SetPosition(Vector3(4, -5, -6));
 
 	initiated = true;
 }
@@ -174,7 +153,7 @@ void Program::InitGraphics()
 	Vector2Int size;
 	glfwGetWindowSize(renderer.GetWindow(), &size.x, &size.y);
 	auto* camera = GameObject::Create();
-	camera->AddComponent<CameraComponent>()->Init(glm::radians(65.0f), size.x / (float)size.y);
+	camera->AddComponent<CameraComponent>()->Init(glm::radians(75.0f), size.x / (float)size.y);
 	//add camera light
 	auto* camLight = camera->AddComponent<LightComponent>();
 	camLight->Init(Vector3(1, 1, 1) * 10.0f, 9, glm::radians(20.0f), glm::radians(8.0f), LightType::SPOTLIGHT);
@@ -243,13 +222,6 @@ void Program::UpdateTime()
 	double newTime = glfwGetTime();
 	deltaTime = newTime - lastTime;
 	lastTime = newTime;
-
-	//shaderRecompileTimer -= deltaTime;
-	//if (shaderRecompileTimer < 0)
-	//{
-	//	renderer.RecompileShaders();
-	//	shaderRecompileTimer = shaderRecompileTime;
-	//}
 }
 
 #pragma region Input 
@@ -292,8 +264,8 @@ void Program::MouseScroll(float delta)
 
 void Program::WindowResize(Vector2Int size)
 {
-	//if (camera)
-	//	camera->SetAspect(size);
+	renderer.OnWindowResize(size);
+
 }
 void Program::WindowFocus(bool focus)
 {

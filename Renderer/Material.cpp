@@ -1,7 +1,7 @@
 #include "Material.h"
 #include "Program.h"
 
-uint32_t Material::materialIDCounter = 0;
+int32_t Material::materialIDCounter = 0;
 GLuint Material::currentMaterial = -1;
 
 Material* Material::Init(Shader& vertex, Shader& fragment)
@@ -39,13 +39,17 @@ Material* Material::Init(Shader& vertex, Shader& fragment)
 	materialID = materialIDCounter;
 	materialIDCounter++;
 
-	Program::GetInstance()->GetRenderer().RegisterMaterial(this);
 	return this;
 }
 
 Material* Material::InitNew(Shader& vertex, Shader& fragment)
 {
 	Material* material = new Material;
+
+	auto& r = Program::GetInstance()->GetRenderer();
+	if (r.GetAutoRegisterMaterials())
+		r.RegisterMaterial(material);
+
 	return material->Init(vertex, fragment);
 }
 
@@ -255,6 +259,12 @@ void Material::SetTextureSampler(GLuint id, Texture2D* texture)
 		if (textures[i].samplerID == id)
 		{
 			textures[i].texture = texture;
+			//set textures (necessary for very sepecific bug)
+			for (auto& tex : textures)
+			{
+				glActiveTexture(GL_TEXTURE0 + tex.attachedUnit);
+				glBindTexture(GL_TEXTURE_2D, tex.texture ? tex.texture->GetID() : 0);
+			}
 			return;
 		}
 	}
@@ -276,6 +286,12 @@ void Material::SetTextureSampler(GLuint id, Texture2D* texture)
 	data.samplerID = id;
 	glUniform1i(id, data.attachedUnit);
 	textures.push_back(data);
+	//set textures (necessary for very sepecific bug)
+	for (auto& tex : textures)
+	{
+		glActiveTexture(GL_TEXTURE0 + tex.attachedUnit);
+		glBindTexture(GL_TEXTURE_2D, tex.texture ? tex.texture->GetID() : 0);
+	}
 }
 #pragma endregion
 

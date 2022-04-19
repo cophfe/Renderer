@@ -19,6 +19,7 @@ struct LightData
     //light type (0 is directional light, 1 is point light, 2 is spotlight)
     int type; 
     float radius; //light radius used for falloff
+    //note: 12 unused bytes here if needed
 };
 
 struct V2F {
@@ -43,11 +44,13 @@ uniform sampler2D _NormalMap;
 uniform sampler2D _MetallicMap;
 uniform sampler2D _RoughnessMap;
 uniform sampler2D _AmbientOcclusionMap;
+uniform sampler2D _IrradienceMap;
+
 layout (std140, binding = 2) uniform Lighting
 {
     LightData _Lights[LIGHT_COUNT];  //0
 	vec3 _AmbientColour;			 //72 * LIGHT_COUNT
-    uniform samplerCube _CubeMap;
+    
 };
 layout (std140, binding = 0) uniform CameraData
 {
@@ -63,24 +66,31 @@ float GetLuminance(vec3 colour)
 {
     return 0.2126*colour.r + 0.7152*colour.g + 0.0722*colour.b;
 }
+
+vec2 GetSphericalUV(vec3 rayDir)
+{
+    vec2 uv = vec2(atan(rayDir.z, rayDir.x), asin(rayDir.y)) * vec2(0.1591, 0.3183);
+    uv += 0.5; 
+    return uv;
+}
+
 //this is an amazing source for PBR:
 //https://learnopengl.com/PBR/Theory
 //it even explains a lot of the physical theory behind the calculations, and shows some of the approximations used in the industry
-//this is suuuper useful for getting different approximations: https://www.jordanstevenstechart.com/physically-based-rendering
+//this is suuuper useful for getting different DFG approximations: https://www.jordanstevenstechart.com/physically-based-rendering
 
-//note: all of these distribution functions were wierd and jittery on complex shapes
 float Distribution (float nDH, float roughness)
 {
     float r2 = roughness*roughness;
-    
-	//Trowbridge-Reitz 
-    float div = nDH * nDH * (r2 - 1.0) + 1.0;
-    return r2 / (div * div * PI_VALUE);
+    float r4 = r2*r2;
 
-    //apparantely GGX is the most popular algorythm
-    //float nDH2 = nDH * nDH;
-    //float v = roughness / (nDH2 * (r2 + (1- nDH2)/nDH2));
-    //return v * v / PI_VALUE;
+	//Trowbridge-Reitz 
+    //float div = nDH * nDH * (r2 - 1.0) + 1.0;
+    //return r2 / (div * div * PI_VALUE);
+
+    //apparantely GGX is the most popular algorithm
+    float v = (nDH * nDH * (r4 - 1.0) + 1.0);
+    return r4 / (PI_VALUE * v * v);
     
     //aie instructure uses beckman distribution instead
     //I assume this is because it can use the same roughness value as oren nayer?
@@ -91,14 +101,14 @@ float Distribution (float nDH, float roughness)
 
 vec3 Fresnel(vec3 viewDir, vec3 halfDir, vec3 r0)
 {
-    //f0 is basically the base surface reflectance
-    //I'm using this model because learnopengl says it allows 
-    //  for transitioning between metallic and non metallic better (physically, that isn't a thing, but we dealing with pixels here)
+    //r0 is basically the base surface reflectance
+    //I'm using this model because it allows 
+    // for transitioning between metallic and non metallic easily, by lerping r0 to the colour of the metal if it is a metallic object 
 
     //pass in vec3 normal, vec3 halfDir (return vec3)
     float cosTheta = max(dot(viewDir, halfDir), 0);
-    return r0 + (1.0 - r0) * pow(1 - cosTheta, 5.0);
-
+    return r0 + (1.0 - r0) * pow(clamp(1 - cosTheta, 0, 1), 5.0);
+    
     //pass in vec3 normal, vec3 viewDir, float f0 (return float)
     // float nDV = 1.0 - dot(normal, viewDir);
     // return 0.05 + (1 - 0.05) * nDV * nDV * nDV * nDV * nDV;
@@ -124,9 +134,9 @@ float Geometry(float nDV, float nDL, float roughness)
 float CalculateAttenuation(LightData light)
 {
     float dist = length(light.position - vertexOutput.fragPos);
-    //return  1.0 / (dist * dist);
+    //return  (light.radius * light.radius) / (dist * dist);
 
-    //using the model from UE4
+    //using the model from UE4 which has some cool features like not blowing up up close and a maximum radius of influence
     float falloff = clamp(pow(1 - pow(dist/light.radius, 4), 2), 0, 1) / (pow(dist, 2) + 1);
     return falloff;
 }
@@ -150,17 +160,18 @@ void main()
     vec3 albedoColour = texture(_AlbedoMap, vertexOutput.texCoord).xyz; 
 	vec3 normalTS = texture(_NormalMap, vertexOutput.texCoord).xyz * 2 - 1;
 	vec3 normalWS = normalize(vertexOutput.matrixTBN * normalTS); //TBN Matrix is in world space
+    vec3 irradiance = texture(_IrradienceMap, GetSphericalUV(normalWS)).rgb;
 
     vec3 viewDirection = normalize(_CameraPosition - vertexOutput.fragPos);
     float nDV = max(dot(normalWS, viewDirection), 0.0);
-    vec3 r0 = mix(vec3(0.04), albedoColour, metallicity);
+    vec3 r0 = mix(vec3(0.05), albedoColour, metallicity);
 
-	vec3 outputColour = _AmbientColour * ambientOcclusion * albedoColour;
+	vec3 outputColour = vec3(0);
     for (int i = 0; i < LIGHT_COUNT; i++)
     {
         //note: should check type of light to get these 2 values
 		vec3 lightDirection;
-		float lightPowerMultiplier = 1;
+		float lightPowerMultiplier = 1.0;
 
 		//i am using this like a c switch when I should be using it as a glsl switch
 		//aka i am concerned this breaks the non branchingness of gpus. hopefully we good? 
@@ -188,15 +199,15 @@ void main()
 
     	float distribution = Distribution(nDH, roughness);
         //this fresnel literally doesn't take into account normal so it doesn't make sense that it works
-        //vec3 fresnel = Fresnel(viewDirection, halfDir, f0);  and it doesn't work, obviously.
-        vec3 fresnel = Fresnel(normalWS, halfDir, r0);
+        //vec3 fresnel = Fresnel(viewDirection, halfDir, r0);  and it doesn't work, for me, but it does for learnopengl somehow so thats interesting
+        vec3 fresnel = Fresnel(viewDirection, halfDir, r0);
     	float geometry = Geometry(nDV, nDL, roughness);
     	
         //float oneMinusCosTheta = 1 - max(dot(viewDir, halfDir), 0);
-        // return f0 + (1.0 - f0) * pow(oneMinusCosTheta, 5.0);
+        // return r0 + (1.0 - r0) * pow(oneMinusCosTheta, 5.0);
 
 		vec3 s = (distribution*fresnel*geometry) 
-			/ max(4 * nDV * nDL, 0.00001); //the 0.00001 is super important, it will have negative values without it
+			/ max(4 * nDV * nDL, 0.00001); //the 0.00001 is super important, it will break sometimes without it
     
 		//fresnel basically works as the proportion of energy being reflected, kD will be the inverse of that (whatever energy was not reflected should be diffused) 
 		//except since metals don't have a diffuse term (aka the diffuse energy is 100% absorbed by the object), diffuse energy has to be multiplied by inverse metalness to basically lerp it to zero based on metalness
@@ -208,7 +219,11 @@ void main()
         //outputColour = fresnel;
     }
     
-	//apparently this all needs to be gamma corrected?????
-	//outputColour = pow(outputColour/ (outputColour + vec3(1)), vec3(1/2.2));
+    //now get ambient and add to output colour
+    vec3 kD = (1.0 - metallicity) * (1.0 - Fresnel(viewDirection, normalWS, r0));
+    vec3 diffuseColour = irradiance * albedoColour;
+    vec3 ambientColour = (kD * diffuseColour) * ambientOcclusion;
+    outputColour += ambientColour;
+
     Colour = vec4(outputColour, 1);
 }

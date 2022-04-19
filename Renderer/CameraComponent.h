@@ -15,6 +15,8 @@ public:
 		UpdateProjection();
 	}
 	inline int GetPriority() const { return priority; }
+	inline float GetAspect() const { return aspect; }
+	inline float GetFOV() const { return fov; }
 	const Matrix4x4& GetProjectionMatrix() const;
 	const Matrix4x4& GetViewMatrix() const;
 	const Matrix4x4& GetViewProjectionMatrix() const;

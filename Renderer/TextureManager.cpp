@@ -17,11 +17,11 @@ void TextureManager::Init(const char* texturePath, unsigned int autoMipMapCount,
 	wrapMode = autoWrapMode;
 }
 
-Texture2D* TextureManager::LoadTextureParams(const char* name, unsigned int mipMapCount, TextureFiltering textureFiltering, TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode)
+Texture2D* TextureManager::LoadTextureParams(const char* name, unsigned int mipMapCount, TextureFiltering textureFiltering, TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode, GLenum internalFormat)
 {
 	if (!map.contains(name))
 	{
-		Texture2D* tex = Texture2D::InitNew((path + std::string(name)).c_str(), mipMapCount, textureFiltering, mipMapFiltering, wrapMode);
+		Texture2D* tex = Texture2D::InitNew((path + std::string(name)).c_str(), mipMapCount, textureFiltering, mipMapFiltering, wrapMode, internalFormat);
 		map.insert(std::make_pair(std::string(name), tex));
 		return tex;
 	}

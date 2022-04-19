@@ -20,7 +20,9 @@ public:
 
 	Shader() { loaded = false; }
 	Shader* Init(const char* path, Type type);
+	Shader* InitRaw(const char* shader, Type type);
 	static Shader* InitNew(const char* path, Type type);
+	static Shader* InitNewRaw(const char* shader, Type type);
 
 	bool ShouldRecompile();
 	bool Recompile();
@@ -39,7 +41,7 @@ public:
 	Shader& operator= (const Shader& other) = delete;
 
 private:
-	bool Compile(bool recompile);
+	bool CompileFromPath(bool recompile);
 
 	std::filesystem::file_time_type lastTime;
 

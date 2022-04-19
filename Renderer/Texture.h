@@ -39,17 +39,23 @@ class Texture2D
 public:
 	Texture2D() { loaded = false; }
 	Texture2D* Init(const char* path, unsigned int mipMapCount = 0, TextureFiltering textureFiltering = TextureFiltering::Linear,
+		TextureMipMapFiltering mipMapFiltering = TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode wrapMode = TextureWrapMode::Wrap, GLenum internalFormat = GL_RGBA);
+	Texture2D* InitEmpty(Vector2Int size, GLenum internalFormat = GL_RGBA, unsigned int mipMapCount = 0, TextureFiltering textureFiltering = TextureFiltering::Linear,
 		TextureMipMapFiltering mipMapFiltering = TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode wrapMode = TextureWrapMode::Wrap);
 
-	static Texture2D* InitNew(const char* path,	unsigned int mipMapCount = 0, TextureFiltering textureFiltering = TextureFiltering::Linear,
+	static Texture2D* InitNew(const char* path, unsigned int mipMapCount = 0, TextureFiltering textureFiltering = TextureFiltering::Linear,
+		TextureMipMapFiltering mipMapFiltering = TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode wrapMode = TextureWrapMode::Wrap, GLenum internalFormat = GL_RGBA);
+	static Texture2D* InitNewEmpty(Vector2Int size, GLenum internalFormat = GL_RGBA, unsigned int mipMapCount = 0, TextureFiltering textureFiltering = TextureFiltering::Linear,
 		TextureMipMapFiltering mipMapFiltering = TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode wrapMode = TextureWrapMode::Wrap);
 
 	void SetWrapMode(TextureWrapMode wrapMode);
 	void SetFiltering(TextureFiltering filtering);
 	void SetFiltering(TextureMipMapFiltering filtering);
-	
-	inline GLuint GetID() { return id; }
+	void Resize(Vector2Int newSize);
 
+	inline GLuint GetID() const { return id; }
+	inline Vector2Int GetSize() const { return size; }
+	
 	Texture2D(Texture2D&& other) noexcept;
 	Texture2D& operator= (Texture2D&& other) noexcept;
 	~Texture2D();
@@ -60,7 +66,9 @@ private:
 
 	GLuint id;
 	Vector2Int size;
-	TextureFormat format;
+
+	int mipMapCount;
+	GLenum internalFormat;
 
 	TextureFiltering filtering;
 	TextureMipMapFiltering mipMapFiltering;

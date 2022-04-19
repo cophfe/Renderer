@@ -4,25 +4,23 @@
 
 //Made this define because for some goddamn reason using a normal stored as GL_INT_2_10_10_10_REV in the fragment shader means I can't sample a texture (even if the thing the normal is doing never actually contributes to anything). 
 //temporarily have vector3 stuff until it is figured out
-#define NormalIsVector3 
+
+enum MeshContentFlags
+{
+	MESH_POSITIONS = 0b1,
+	MESH_NORMALS = 0b10,
+	MESH_TANGENTS = 0b100,
+	MESH_BITANGENTS = 0b1000,
+	MESH_TEXCOORDS = 0b10000,
+};
 
 //used to create a mesh
 struct MeshData
 {
 	typedef glm::vec<3, float> Position;
-#ifdef NormalIsVector3
-	typedef Vector3 Normal; // uint32_t
-#else
-	typedef uint32_t Normal;
-#endif // NormalIsVector3
+	typedef glm::vec<3, float> Normal;
 
 	typedef glm::vec<2, float> TexCoord;
-	/*struct TexCoord 
-	{
-		TexCoord(GLushort x, GLushort y) : x(x), y(y) {}
-
-		GLushort x, y;
-	};*/
 
 	typedef unsigned int Index;
 	typedef unsigned int Size;
@@ -37,25 +35,18 @@ struct MeshData
 		Vector2 texCoord;
 	};
 
-	MeshData* AllocateMeshData(Size vertexCount, Size indexCount);
+	MeshData* AllocateMeshData(Size vertexCount, Size indexCount, GLushort contentFlags = 0xFFFF);
 
 	void SetPositions(const Position* positions, Size count);
 	void SetNormals(const Normal* normals, Size count);
 	void SetTangents(const Normal* tangents, Size count);
 	void SetBitangents(const Normal* biTangents, Size count);
-#ifndef NormalIsVector3
-	void SetNormals(const Vector3* normals, Size count);
-#endif
 	void SetTexCoords(const TexCoord* coords, Size count);
-	//void SetTexCoords(const Vector2* coords, Size count);
 	void SetIndices(const Index* indices, Size count);
 	void SetVerticesData(const VertexData* vertices, Size count);
 	
-	void CalculateNormalTangentBitangents(bool clockwise);
-
-#ifndef NormalIsVector3
-	static Normal PackNormal(const Vector3& normal);
-#endif
+	void CalculateNormalTangentBitangents();
+	GLushort GetContentFlags() const { return flags; }
 	//static TexCoord PackTexCoord(const Vector2& texcoord);
 
 	//https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
@@ -70,11 +61,13 @@ struct MeshData
 	Normal* tangents;
 	Normal* bitangents;
 	TexCoord* texCoords;
+	GLushort flags;
+	void* data;
 
 	Size indexCount;
 	Size vertexCount;
 	
-	inline void* GetBuffer() { return positions; }
+	inline void* GetBuffer() { return data; }
 	Size GetBufferSize();
 
 	MeshData() { positions = nullptr; }

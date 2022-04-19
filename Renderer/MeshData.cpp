@@ -1,13 +1,14 @@
 #include "MeshData.h"
 #include <stdexcept>
 
-MeshData* MeshData::AllocateMeshData(Size vertexCount, Size indexCount)
+MeshData* MeshData::AllocateMeshData(Size vertexCount, Size indexCount, GLushort contentFlags)
 {
 	this->vertexCount = vertexCount;
 	this->indexCount = indexCount;
+	flags = contentFlags;
 	uint32_t size = GetBufferSize();
 
-	void* data = malloc(size);
+	data = malloc(size);
 	if (!data)
 		throw std::runtime_error("Failed to allocate memory");
 
@@ -15,16 +16,40 @@ MeshData* MeshData::AllocateMeshData(Size vertexCount, Size indexCount)
 
 	size_t position = (size_t)data;
 
-	positions = (Position*)position;
-	position += sizeof(Position) * vertexCount;
+	if (flags & MESH_POSITIONS)
+	{
+		positions = (Position*)position;
+		position += sizeof(Position) * vertexCount;
+	}
+	else positions = nullptr;
 
- 	normals = (Normal*)position;
-	position += sizeof(Normal) * vertexCount;
- 	tangents = (Normal*)position;
-	position += sizeof(Normal) * vertexCount;
- 	bitangents = (Normal*)position;
-	position += sizeof(Normal) * vertexCount;
-	texCoords = (TexCoord*)position;
+	if (flags & MESH_NORMALS)
+	{
+		normals = (Normal*)position;
+		position += sizeof(Normal) * vertexCount;
+	}
+	else normals = nullptr;
+
+	if (flags & MESH_TANGENTS)
+	{
+		tangents = (Normal*)position;
+		position += sizeof(Normal) * vertexCount;
+	}
+	else tangents = nullptr;
+
+	if (flags & MESH_BITANGENTS)
+	{
+		bitangents = (Normal*)position;
+		position += sizeof(Normal) * vertexCount;
+	}
+	else bitangents = nullptr;
+
+	if (flags & MESH_TEXCOORDS)
+	{
+		texCoords = (TexCoord*)position;
+		position += sizeof(TexCoord) * vertexCount;
+	}
+	else texCoords = nullptr;
 
 	if (indexCount)
 		indices = new Index[indexCount];
@@ -39,6 +64,8 @@ void MeshData::SetPositions(const Position* positions, Size count)
 {
 	if (count != vertexCount)
 		throw "Array size does not match vertex count\n";
+	else if (!this->positions)
+		throw "MeshData does not contain positions\n";
 
 	memcpy(this->positions, positions, count * sizeof(Position));
 }
@@ -47,6 +74,8 @@ void MeshData::SetNormals(const Normal* normals, Size count)
 {
 	if (count != vertexCount)
 		throw "Array size does not match vertex count\n";
+	else if (!this->normals)
+		throw "MeshData does not contain normals\n";
 
 	memcpy(this->normals, normals, count * sizeof(Normal));
 }
@@ -55,6 +84,8 @@ void MeshData::SetTangents(const Normal* tangents, Size count)
 {
 	if (count != vertexCount)
 		throw "Array size does not match vertex count\n";
+	else if (!this->tangents)
+		throw "MeshData does not contain tangents\n";
 
 	memcpy(this->tangents, tangents, count * sizeof(Normal));
 }
@@ -63,41 +94,21 @@ void MeshData::SetBitangents(const Normal* bitangents, Size count)
 {
 	if (count != vertexCount)
 		throw "Array size does not match vertex count\n";
+	else if (!this->bitangents)
+		throw "MeshData does not contain bitangents\n";
 
 	memcpy(this->bitangents, bitangents, count * sizeof(Normal));
 }
-
-#ifndef NormalIsVector3
-void MeshData::SetNormals(const Vector3* normals, Size count)
-{
-	if (count != vertexCount)
-		throw "Array size does not match vertex count\n";
-
-	for (Size i = 0; i < vertexCount; i++)
-	{
-		this->normals[i] = PackNormal(normals[i]);
-	}
-}
-#endif
 
 void MeshData::SetTexCoords(const TexCoord* coords, Size count)
 {
 	if (count != vertexCount)
 		throw "Array size does not match vertex count\n";
-	
-	memcpy(this->texCoords, texCoords, count * sizeof(TexCoord));
+	else if (!this->texCoords)
+		throw "MeshData does not contain texcoords\n";
+
+	memcpy(this->texCoords, coords, count * sizeof(TexCoord));
 }
-//
-//void MeshData::SetTexCoords(const Vector2* coords, Size count)
-//{
-//	if (count != vertexCount)
-//		throw "Array size does not match vertex count\n";
-//
-//	for (Size i = 0; i < count; i++)
-//	{
-//		this->texCoords[i] = PackTexCoord(coords[i]);
-//	}
-//}
 
 void MeshData::SetVerticesData(const VertexData* vertices, Size count)
 {
@@ -106,19 +117,20 @@ void MeshData::SetVerticesData(const VertexData* vertices, Size count)
 
 	for (Size i = 0; i < vertexCount; i++)
 	{
-		positions[i] = vertices[i].pos;
-#ifdef NormalIsVector3
-		normals[i] = vertices[i].normal;
-#else
-		normals[i] = PackNormal(vertices[i].normal);
-#endif
-		texCoords[i] = vertices[i].texCoord;// PackTexCoord(vertices[i].texCoord);
+		if (positions)
+			positions[i] = vertices[i].pos;
+		if (normals)
+			normals[i] = vertices[i].normal;
+		if (texCoords)
+			texCoords[i] = vertices[i].texCoord;
 	}
 }
 
-void MeshData::CalculateNormalTangentBitangents(bool clockwise)
+void MeshData::CalculateNormalTangentBitangents()
 {
-	float multiplier = clockwise ? -1 : 1;
+
+	if (!normals || !tangents || !bitangents)
+		return;
 
 	for (size_t i = 0; i + 2 < indexCount; i += 3)
 	{
@@ -127,16 +139,12 @@ void MeshData::CalculateNormalTangentBitangents(bool clockwise)
 		size_t i3 = indices[i + 2];
 
 		Vector3 normal = glm::cross(positions[i2] - positions[i1], positions[i3] - positions[i1]);
-#ifdef NormalIsVector3
 		Normal n = normal;
-#else
-		Normal n = PackNormal(multiplier * glm::normalize(normal));
-#endif
 		
 		normals[i1] = n;
 		normals[i2] = n;
 		normals[i3] = n;
-
+		
 		//tangent is parallel to the normal, pointed in the direction of the texcoord
 		//https://learnopengl.com/Advanced-Lighting/Normal-Mapping
 
@@ -178,42 +186,14 @@ void MeshData::SetIndices(const Index* indices, Size count)
 
 #pragma endregion
 
-#pragma region Pack Data
-#ifndef NormalIsVector3
-MeshData::Normal MeshData::PackNormal(const Vector3& normal)
-{
-	//formatted as GL_INT_2_10_10_10_REV
-	//I had no idea how to do that so thanks to https://stackoverflow.com/questions/35961057/how-to-pack-normals-into-gl-int-2-10-10-10-rev
-	//who got it from https://www.gamedev.net/forums/topic/685081-normal-vector-artifacts-with-nvmeshmender/
-
-	const uint32_t xs = normal.x < 0;
-	const uint32_t ys = normal.y < 0;
-	const uint32_t zs = normal.z < 0;
-	Normal packed =
-		zs << 29 | ((uint32_t)(normal.z * 511 + (zs << 9)) & 511) << 20 |
-		ys << 19 | ((uint32_t)(normal.y * 511 + (ys << 9)) & 511) << 10 |
-		xs << 9 | ((uint32_t)(normal.x * 511 + (xs << 9)) & 511);
-
-	return normal;
-}
-#endif
-
-//MeshData::TexCoord MeshData::PackTexCoord(const Vector2& texcoord)
-//{
-//	//2x GL_UNSIGNED_SHORT
-//	
-//	return TexCoord((GLushort)(texcoord.x * USHRT_MAX), (GLushort)(texcoord.y * USHRT_MAX));
-//}
-#pragma endregion
-
 MeshData::Size MeshData::GetBufferSize()
 {
-	return vertexCount * (sizeof(Position) + 3 * sizeof(Normal) + sizeof(TexCoord));
+	return vertexCount * (((flags & MESH_POSITIONS) != 0) * sizeof(Position) + ((flags & MESH_NORMALS) != 0) * sizeof(Normal) + ((flags & MESH_TANGENTS) != 0) * sizeof(Normal) + ((flags & MESH_BITANGENTS) != 0) * sizeof(Normal) + ((flags & MESH_TEXCOORDS) != 0) * sizeof(TexCoord));
 }
 
 MeshData::MeshData(MeshData&& other) noexcept
 {
-	if (other.positions) //if initiated
+	if (other.data) //if initiated
 	{
 		indexCount = other.indexCount;
 		vertexCount = other.vertexCount;
@@ -224,28 +204,32 @@ MeshData::MeshData(MeshData&& other) noexcept
 		normals = other.normals;
 		texCoords = other.texCoords;
 		indices = other.indices;
+		data = other.data;
 
+		other.data = nullptr;
 		other.positions = nullptr;
 		other.normals = nullptr;
 		other.texCoords = nullptr;
+		other.tangents = nullptr;
+		other.bitangents = nullptr;
 		other.indices = nullptr;
 	}
 	else
 	{
 		//else do not initiate
-		positions = nullptr;
+		data = nullptr;
 	}
 
 }
 
 MeshData& MeshData::operator=(MeshData&& other) noexcept
 {
-	if (positions)
-		free(positions);
+	if (data)
+		free(data);
 	if (indices)
 		delete[] indices;
 
-	if (other.positions) //if initiated
+	if (other.data) //if initiated
 	{
 		indexCount = other.indexCount;
 		vertexCount = other.vertexCount;
@@ -255,29 +239,38 @@ MeshData& MeshData::operator=(MeshData&& other) noexcept
 		positions = other.positions;
 		normals = other.normals;
 		texCoords = other.texCoords;
+		tangents = other.tangents;
+		bitangents = other.bitangents;
 		indices = other.indices;
+		data = other.data;
 
 		other.positions = nullptr;
 		other.normals = nullptr;
+		other.tangents = nullptr;
+		other.bitangents = nullptr;
 		other.texCoords = nullptr;
 		other.indices = nullptr;
+		other.data = nullptr;
 	}
 	else
 	{
 		//else do not initiate
-		positions = nullptr;
+		data = nullptr;
 	}
 	return *this;
 }
 
 MeshData::~MeshData()
 {
-	if (positions)
+	if (data)
 	{
-		free(positions);
+		free(data);
+		data = nullptr;
 		positions = nullptr;
 		normals = nullptr;
 		texCoords = nullptr;
+		tangents = nullptr;
+		bitangents = nullptr;
 	}
 
 	if (indices)
@@ -289,42 +282,42 @@ MeshData::~MeshData()
 
 MeshData::MeshData(const MeshData& other)
 {
-	if (other.positions) //if initiated
+	if (other.data) //if initiated
 	{
 		indexCount = other.indexCount;
 		vertexCount = other.vertexCount;
 
 		AllocateMeshData(vertexCount, indexCount);
-		memcpy(positions, other.positions, GetBufferSize());
+		memcpy(data, other.data, GetBufferSize());
 		memcpy(indices, other.indices, indexCount * sizeof(Index));
 	}
 	else
 	{
 		//else do not initiate
-		positions = nullptr;
+		data = nullptr;
 	}
 }
 
 MeshData& MeshData::operator=(const MeshData& other)
 {
-	if (positions)
-		free(positions);
+	if (data)
+		free(data);
 	if (indices)
 		delete[] indices;
 	
-	if (other.positions) //if initiated
+	if (other.data) //if initiated
 	{
 		indexCount = other.indexCount;
 		vertexCount = other.vertexCount;
 
 		AllocateMeshData(vertexCount, indexCount);
-		memcpy(positions, other.positions, GetBufferSize());
+		memcpy(data, other.data, GetBufferSize());
 		memcpy(indices, other.indices, indexCount * sizeof(Index));
 	}
 	else
 	{
 		//else do not initiate
-		positions = nullptr;
+		data = nullptr;
 	}
 	return *this;
 }

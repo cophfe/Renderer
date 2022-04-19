@@ -1,9 +1,11 @@
 #include "MeshPrimitive.h"
 constexpr float RADIUS = 0.25f;
 
-void MeshPrimitive::SetCube(MeshData& data, float radius)
+void MeshPrimitive::SetCube(MeshData& data, float radius, bool invert, GLushort flags)
 {
 	//values from https://pastebin.com/DXKEmvap
+	
+	int normalMultiplier = invert ? 1 : -1;
 
 	MeshData::VertexData vertices[24] = {
 		//BACK
@@ -53,19 +55,16 @@ void MeshPrimitive::SetCube(MeshData& data, float radius)
 		20, 21, 22,
 		22, 23, 20
 	};
-	data.AllocateMeshData(24, 36);
+	data.AllocateMeshData(24, 36, flags);
 	data.SetVerticesData(vertices, 24);
 	data.SetIndices(indices, 36);
 	
-	data.CalculateNormalTangentBitangents(false);
+	data.CalculateNormalTangentBitangents();
 }
 
-void MeshPrimitive::SetCircle(MeshData& data, float radius)
+void MeshPrimitive::SetCircle(MeshData& data, float radius, bool invert, GLushort flags)
 {
-	SetCube(data);
-}
-
-void MeshPrimitive::SetCylinder(MeshData& data, float radius, float height)
-{
-	SetCube(data);
+	//uhh yeah I never got these done
+	//if you think about it all the points on the cube are also points on a sphere, therefor it is a really really low poly sphere
+	SetCube(data, radius, invert, flags);
 }
