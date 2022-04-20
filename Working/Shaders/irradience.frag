@@ -26,12 +26,17 @@ vec2 GetSphericalUV(vec3 rayDir)
 vec3 GetDirectionFromUV(vec2 uv)
 {
     //convert uv to be in spherical coordinates
-    uv -= 0.5;
+    //uv -= 0.5;
+    //uv *= vec2(2 * PI_VALUE, PI_VALUE);
+    ////now uv should be spherical coordinates now can be mapped to cartesian coordinates 
+    //float sLat = sin(uv.y);
+    //return vec3(sin(uv.x) * sLat, cos(uv.y), cos(uv.x) * sLat);
+    // return vec3(cos(uv.x) * sLat, sin(uv.x) * sLat, sin(uv.z))
+
+    uv.x += 0.25; 
     uv *= vec2(2 * PI_VALUE, PI_VALUE);
-    //now uv should be spherical coordinates now can be mapped to cartesian coordinates 
-    float sLat = sin(uv.y);
-    return vec3(sin(uv.x) * sLat, cos(uv.y), cos(uv.x) * sLat);
-   // return vec3(cos(uv.x) * sLat, sin(uv.x) * sLat, sin(uv.z))
+    float sLat =  sin(uv.y);
+    return vec3(-sin(uv.x) * sLat, -cos(uv.y), cos(uv.x) * sLat);
 }
 
 //I am extrememly running out of time so this is mostly just learnopengl.com/PBR/IBL/Diffuse-irradiance
@@ -61,7 +66,7 @@ void main()
             float sLat = sin(theta); 
             vec3 tangentSample = vec3(sLat * cos(phi), sLat * sin(phi), cos(theta));
             // TS to WS
-        	vec3 worldSample = tangentSample.x * right + tangentSample.y * up + tangentSample.z * normal; 
+        	vec3 worldSample = tangentSample.x * right + tangentSample.y * up + tangentSample.z * normal;
             irradiance += texture(_SkyMap, GetSphericalUV(worldSample)).rgb * cos(theta) * sin(theta);
             sCount++;
         }

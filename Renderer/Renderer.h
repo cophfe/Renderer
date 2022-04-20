@@ -57,9 +57,9 @@ public:
 
 	Vector4 ambientColour = 0.08f * Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	void SetPBRValues(Material* pbrMaterial, float roughnessMultiplier = 0.5f, const char* albedo = nullptr, 
+	void SetPBRValues(Material* pbrMaterial, float roughnessMultiplier = 0.5f, float metallicityMultiplier = 0.0f, const char* albedo = nullptr,
 		const char* normal = nullptr, const char* roughness = nullptr, const char* metallic = nullptr, 
-		const char* ao = nullptr, bool defaultMetallic = false, bool setIrradianceMap = true);
+		const char* ao = nullptr, bool setIBLMaps = true);
 private:
 	GLFWwindow* window;
 
@@ -84,7 +84,8 @@ private:
 	Mesh frameQuad;
 	Material skyboxMaterial;
 	Texture2D irradienceMap;
-	Texture2D environmentMap;
+	Texture2D prefilterMap;
+	Texture2D brdfLookupTexture;
 
 	struct CameraBufferStruct {
 		Matrix4x4 viewProjectionMatrix;

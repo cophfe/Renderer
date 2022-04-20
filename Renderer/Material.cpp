@@ -316,6 +316,10 @@ Material* Material::Clone()
 	//note: does not contain the same uniform values
 	Material* mat = new Material();
 	mat->Init(*vertex, *fragment);
+
+	auto& r = Program::GetInstance()->GetRenderer();
+	if (r.GetAutoRegisterMaterials())
+		r.RegisterMaterial(mat);
 	return mat;
 }
 

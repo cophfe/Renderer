@@ -31,6 +31,7 @@ public:
 	void Init(Vector3 luminance, float radius, 
 		LightType type = LightType::POINT);
 
+	void SetLuminance(Vector3 luminance);
 	void SetSpotLightData(float radius, float minAngleRad, float falloffRadians);
 	void SetPointLightData(float radius);
 	static float EstimateLightIntensityAtPoint(Vector3 point, const LightDataStruct& lightData);

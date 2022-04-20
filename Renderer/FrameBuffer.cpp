@@ -6,9 +6,9 @@ FrameBuffer* FrameBuffer::Init(Vector2Int size, GLenum colourInternalType, GLenu
 	if (loaded)
 		throw "FrameBuffer already loaded";
 
-	colour = Texture2D::InitNewEmpty(size, colourInternalType, 0, TextureFiltering::Linear, TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode::BorderClamp);
+	colour = Texture2D::InitNewEmpty(size, colourInternalType,TextureFiltering::Linear, TextureMipMapFiltering::Linear, TextureWrapMode::BorderClamp);
 	if (useDepth)
-		depth = Texture2D::InitNewEmpty(size, depthInternalType, 0, TextureFiltering::Linear, TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode::BorderClamp);
+		depth = Texture2D::InitNewEmpty(size, depthInternalType, TextureFiltering::Linear, TextureMipMapFiltering::Linear, TextureWrapMode::BorderClamp);
 	
 	glGenFramebuffers(1, &id);
 	glBindFramebuffer(GL_FRAMEBUFFER, id);

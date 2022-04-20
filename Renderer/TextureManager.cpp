@@ -1,7 +1,7 @@
 #include "TextureManager.h"
 
-void TextureManager::Init(const char* texturePath, unsigned int autoMipMapCount,
-	TextureFiltering autoTextureFiltering, TextureMipMapFiltering autoMipMapFiltering, TextureWrapMode autoWrapMode)
+void TextureManager::Init(const char* texturePath,
+	TextureFiltering autoTextureFiltering, TextureMipMapFiltering autoMipMapFiltering, TextureWrapMode autoWrapMode, GLenum autoInternalFormat)
 {
 	
 	if (path != "" && !std::filesystem::is_directory(path))
@@ -11,17 +11,24 @@ void TextureManager::Init(const char* texturePath, unsigned int autoMipMapCount,
 	}
 	path = texturePath;
 	
-	mipMapCount = autoMipMapCount;
 	textureFiltering = autoTextureFiltering;
 	mipMapFiltering = autoMipMapFiltering;
 	wrapMode = autoWrapMode;
+	internalFormat = autoInternalFormat;
+
+	defaultTexture = LoadTexture("white.png");
+	if (defaultTexture == nullptr)
+	{
+		ownsDefault = true;
+		defaultTexture = Texture2D::InitNewEmpty(Vector2Int(1, 1));
+	}
 }
 
-Texture2D* TextureManager::LoadTextureParams(const char* name, unsigned int mipMapCount, TextureFiltering textureFiltering, TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode, GLenum internalFormat)
+Texture2D* TextureManager::LoadTextureParams(const char* name, TextureFiltering textureFiltering, TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode, GLenum internalFormat)
 {
 	if (!map.contains(name))
 	{
-		Texture2D* tex = Texture2D::InitNew((path + std::string(name)).c_str(), mipMapCount, textureFiltering, mipMapFiltering, wrapMode, internalFormat);
+		Texture2D* tex = Texture2D::InitNew((path + std::string(name)).c_str(), textureFiltering, mipMapFiltering, wrapMode, internalFormat);
 		map.insert(std::make_pair(std::string(name), tex));
 		return tex;
 	}
@@ -33,7 +40,9 @@ Texture2D* TextureManager::LoadTexture(const char* name)
 {
 	if (!map.contains(name))
 	{
-		Texture2D* tex = Texture2D::InitNew((path + std::string(name)).c_str(), mipMapCount, textureFiltering, mipMapFiltering, wrapMode);
+		Texture2D* tex = Texture2D::InitNew((path + std::string(name)).c_str(), textureFiltering, mipMapFiltering, wrapMode);
+		if (tex == nullptr)
+			return defaultTexture;
 		map.insert(std::make_pair(std::string(name), tex));
 		return tex;
 	}
@@ -43,10 +52,16 @@ Texture2D* TextureManager::LoadTexture(const char* name)
 
 void TextureManager::Unload()
 {
+	if (ownsDefault)
+	{
+		delete defaultTexture;
+		defaultTexture = nullptr;
+	}
 	for (auto& texPair : map)
 	{
 		delete texPair.second;
 	}
+
 	map.clear();
 }
 

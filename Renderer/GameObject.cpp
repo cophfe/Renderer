@@ -13,6 +13,7 @@ GameObject* GameObject::Create(Transform* parent)
 	if (parent)
 		parent->AddChild(gO->GetTransform());
 	idCounter++;
+	gO->transform.SetAttachedGameObject(gO);
 
 	Program::GetInstance()->RegisterGameObject(gO);
 	return gO;
@@ -20,7 +21,6 @@ GameObject* GameObject::Create(Transform* parent)
 
 void GameObject::Start()
 {
-	transform.SetAttachedGameObject(this);
 
 	for (auto& component : components)
 	{
@@ -43,12 +43,16 @@ void GameObject::Update()
 
 void GameObject::Unload() //called when deleting all objects at once, so no hirarchy changes needed
 {
+	if (id == -1)
+		return;
+
 	for (auto& component : components)
 	{
 		component->Unload();
 		delete component;
 	}
 	components.clear();
+	id = -1;
 }
 
 void GameObject::UnloadHierarchy() //called when this object specifically is being deleted
@@ -141,6 +145,7 @@ GameObject* GameObject::Copy()
 	for (size_t i = 0; i < components.size(); i++)
 	{
 		gO->components[i] = components[i]->Clone();
+		gO->components[i]->ConnectGameObject(gO);
 	}
 
 	gO->transform = transform;
@@ -148,11 +153,12 @@ GameObject* GameObject::Copy()
 	for (size_t i = 0; i < transform.children.size(); i++)
 	{
 		gO->transform.children[i] = &transform.children[i]->GetGameObject()->Copy()->GetTransform();
+		gO->transform.children[i]->parent = &gO->transform;
 	}
 	gO->enabled = enabled;
 	gO->id = idCounter;
 	idCounter++;
-	Program::GetInstance()->RegisterGameObject(this);
+	Program::GetInstance()->RegisterGameObject(gO);
 
-	return nullptr;
+	return gO;
 }

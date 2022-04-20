@@ -6,26 +6,43 @@
 #include <iostream>
 #include <sstream>
 
-Texture2D* Texture2D::Init(const char* path,
-	unsigned int mipMapCount, TextureFiltering textureFiltering,
+Texture2D* Texture2D::Init(const char* path, TextureFiltering textureFiltering,
 	TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode, GLenum internalFormat)
 {	
 	glGenTextures(1, &id);
 	glBindTexture(GL_TEXTURE_2D, id);
 	int channels = 0;
+	GLenum type;
 	//stbi_set_flip_vertically_on_load(true);
-	unsigned char* data = stbi_load(path, &size.x, &size.y, &channels, 4);
-	if (data == nullptr)
+	union {
+		unsigned char* c;
+		float* f;
+	} data;
+
+	if (internalFormat == GL_RGBA16F || internalFormat == GL_RGBA32F || internalFormat == GL_RGB16F || internalFormat == GL_RGB32F || internalFormat == GL_RG16F || internalFormat == GL_RG32F || internalFormat == GL_R16F || internalFormat == GL_R32F)
 	{
-		throw "Image data failed to load";
+		type = GL_FLOAT;
+		stbi_ldr_to_hdr_gamma(1.0f); //i wanna do the correction dammit
+		data.f = stbi_loadf(path, &size.x, &size.y, &channels, 4);
+	}
+	else
+	{
+		type = GL_UNSIGNED_BYTE;
+		data.c = stbi_load(path, &size.x, &size.y, &channels, 4);
+	}
+
+	if (data.c == nullptr)
+	{
+		return nullptr;
 	}
 	
-	this->mipMapCount = mipMapCount;
+	this->hasMipMaps = mipMapFiltering != TextureMipMapFiltering::Linear && mipMapFiltering != TextureMipMapFiltering::Nearest;
 	this->internalFormat = internalFormat;
-	glTexImage2D(GL_TEXTURE_2D, mipMapCount, internalFormat, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, size.x, size.y, 0, GL_RGBA, type, data.c);
+	if (hasMipMaps)
+		glGenerateMipmap(GL_TEXTURE_2D);
 	//DebugDraw(data);
-	stbi_image_free(data);
-	glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(data.c);
 
 	SetFiltering(textureFiltering);
 	SetWrapMode(wrapMode);
@@ -34,7 +51,7 @@ Texture2D* Texture2D::Init(const char* path,
 	return this;
 }
 
-Texture2D* Texture2D::InitEmpty(Vector2Int size, GLenum internalFormat, unsigned int mipMapCount, TextureFiltering textureFiltering, 
+Texture2D* Texture2D::InitEmpty(Vector2Int size, GLenum internalFormat, TextureFiltering textureFiltering, 
 	TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode)
 {
 	glGenTextures(1, &id);
@@ -47,33 +64,31 @@ Texture2D* Texture2D::InitEmpty(Vector2Int size, GLenum internalFormat, unsigned
 		format = GL_RGBA;
 
 	
-	glTexImage2D(GL_TEXTURE_2D, mipMapCount, internalFormat, size.x, size.y, 0, format, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, size.x, size.y, 0, format, GL_UNSIGNED_BYTE, NULL);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	SetFiltering(textureFiltering);
 	SetWrapMode(wrapMode);
 	SetFiltering(mipMapFiltering);
 	loaded = true;
-	this->mipMapCount = mipMapCount;
+	this->hasMipMaps = mipMapFiltering != TextureMipMapFiltering::Linear && mipMapFiltering != TextureMipMapFiltering::Nearest;
 	this->internalFormat = internalFormat;
 	this->size = size;
 	return this;
 }
 
-Texture2D* Texture2D::InitNew(const char* path,
-	unsigned int mipMapCount, TextureFiltering textureFiltering,
+Texture2D* Texture2D::InitNew(const char* path, TextureFiltering textureFiltering,
 	TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode, GLenum internalFormat)
 {
 	Texture2D* tex = new Texture2D();
-	tex->Init(path, mipMapCount, textureFiltering, mipMapFiltering, wrapMode, internalFormat);
-	return tex;
+	
+	return tex->Init(path, textureFiltering, mipMapFiltering, wrapMode, internalFormat);
 }
 
-Texture2D* Texture2D::InitNewEmpty(Vector2Int size, GLenum internalFormat, unsigned int mipMapCount, TextureFiltering textureFiltering, 
+Texture2D* Texture2D::InitNewEmpty(Vector2Int size, GLenum internalFormat, TextureFiltering textureFiltering, 
 	TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode)
 { 
 	Texture2D* tex = new Texture2D();
-	tex->InitEmpty(size, internalFormat, mipMapCount, textureFiltering, mipMapFiltering, wrapMode);
-	return tex;
+	return tex->InitEmpty(size, internalFormat, textureFiltering, mipMapFiltering, wrapMode);
 }
 
 void Texture2D::SetWrapMode(TextureWrapMode wrapMode)
@@ -100,7 +115,13 @@ void Texture2D::SetFiltering(TextureMipMapFiltering filtering)
 	glBindTexture(GL_TEXTURE_2D, id);
 
 	mipMapFiltering = filtering;
+	bool newHasMipMaps = mipMapFiltering != TextureMipMapFiltering::Linear && mipMapFiltering != TextureMipMapFiltering::Nearest;
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLenum)filtering);
+	if (newHasMipMaps == true && hasMipMaps == false)
+	{
+		hasMipMaps = true;
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
 }
 
 void Texture2D::Resize(Vector2Int newSize)
@@ -115,7 +136,8 @@ void Texture2D::Resize(Vector2Int newSize)
 		format = GL_RGBA;
 
 	glBindTexture(GL_TEXTURE_2D, id);
-	glTexImage2D(GL_TEXTURE_2D, mipMapCount, internalFormat, size.x, size.y, 0, format, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, size.x, size.y, 0, format, GL_UNSIGNED_BYTE, NULL);
+	glGenerateMipmap(GL_TEXTURE_2D);
 	size = newSize;
 	
 }
@@ -125,7 +147,7 @@ Texture2D::Texture2D(Texture2D&& other) noexcept
 	id = other.id;
 	loaded = other.loaded;
 	size = other.size;
-	mipMapCount = other.mipMapCount;
+	hasMipMaps = other.hasMipMaps;
 	internalFormat = other.internalFormat;
 	filtering = other.filtering;
 	wrapMode = other.wrapMode;
@@ -143,7 +165,7 @@ Texture2D& Texture2D::operator=(Texture2D&& other) noexcept
 	id = other.id;
 	loaded = other.loaded;
 	size = other.size;
-	mipMapCount = other.mipMapCount;
+	hasMipMaps = other.hasMipMaps;
 	internalFormat = other.internalFormat;
 	filtering = other.filtering;
 	wrapMode = other.wrapMode;
@@ -164,6 +186,7 @@ Texture2D::~Texture2D()
 
 void Texture2D::DebugDraw(unsigned char* data)
 {
+	//only works for UNSIGNED_CHAR datatype
 	const std::string shading = " .:-=+*#%@";
 	const int xSize = 30;
 	int ySize = size.y / size.x * xSize;

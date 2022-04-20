@@ -33,6 +33,12 @@ void LightComponent::Init(Vector3 luminance, float radius, LightType type)
 	Program::GetInstance()->GetRenderer().UpdateLights();
 }
 
+void LightComponent::SetLuminance(Vector3 luminance)
+{
+	lightData.luminance = luminance;
+	Program::GetInstance()->GetRenderer().UpdateLights();
+}
+
 void LightComponent::SetSpotLightData(float radius, float minAngleRad, float falloffRadians)
 {
 	lightData.minAngle = glm::cos(minAngleRad);
@@ -42,7 +48,8 @@ void LightComponent::SetSpotLightData(float radius, float minAngleRad, float fal
 
 void LightComponent::SetPointLightData(float radius)
 {
-	lightData.luminance = luminance * radius * radius;
+	lightData.luminance = luminance;
+	lightData.radius = radius;
 	Program::GetInstance()->GetRenderer().UpdateLights();
 }
 

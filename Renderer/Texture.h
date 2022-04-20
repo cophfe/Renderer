@@ -10,6 +10,8 @@ enum class TextureFiltering : GLenum //GL_TEXTURE_MAG_FILTER
 
 enum class TextureMipMapFiltering : GLenum //GL_TEXTURE_MIN_FILTER
 {
+	Nearest = GL_NEAREST,
+	Linear = GL_LINEAR,
 	NearestMipMapNearest = GL_NEAREST_MIPMAP_NEAREST,
 	NearestMipMapLinear = GL_NEAREST_MIPMAP_LINEAR,
 	LinearMipMapNearest = GL_LINEAR_MIPMAP_NEAREST,
@@ -38,14 +40,14 @@ class Texture2D
 {
 public:
 	Texture2D() { loaded = false; }
-	Texture2D* Init(const char* path, unsigned int mipMapCount = 0, TextureFiltering textureFiltering = TextureFiltering::Linear,
+	Texture2D* Init(const char* path, TextureFiltering textureFiltering = TextureFiltering::Linear,
 		TextureMipMapFiltering mipMapFiltering = TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode wrapMode = TextureWrapMode::Wrap, GLenum internalFormat = GL_RGBA);
-	Texture2D* InitEmpty(Vector2Int size, GLenum internalFormat = GL_RGBA, unsigned int mipMapCount = 0, TextureFiltering textureFiltering = TextureFiltering::Linear,
+	Texture2D* InitEmpty(Vector2Int size, GLenum internalFormat = GL_RGBA, TextureFiltering textureFiltering = TextureFiltering::Linear,
 		TextureMipMapFiltering mipMapFiltering = TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode wrapMode = TextureWrapMode::Wrap);
 
-	static Texture2D* InitNew(const char* path, unsigned int mipMapCount = 0, TextureFiltering textureFiltering = TextureFiltering::Linear,
+	static Texture2D* InitNew(const char* path, TextureFiltering textureFiltering = TextureFiltering::Linear,
 		TextureMipMapFiltering mipMapFiltering = TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode wrapMode = TextureWrapMode::Wrap, GLenum internalFormat = GL_RGBA);
-	static Texture2D* InitNewEmpty(Vector2Int size, GLenum internalFormat = GL_RGBA, unsigned int mipMapCount = 0, TextureFiltering textureFiltering = TextureFiltering::Linear,
+	static Texture2D* InitNewEmpty(Vector2Int size, GLenum internalFormat = GL_RGBA, TextureFiltering textureFiltering = TextureFiltering::Linear,
 		TextureMipMapFiltering mipMapFiltering = TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode wrapMode = TextureWrapMode::Wrap);
 
 	void SetWrapMode(TextureWrapMode wrapMode);
@@ -67,7 +69,7 @@ private:
 	GLuint id;
 	Vector2Int size;
 
-	int mipMapCount;
+	bool hasMipMaps = false;
 	GLenum internalFormat;
 
 	TextureFiltering filtering;

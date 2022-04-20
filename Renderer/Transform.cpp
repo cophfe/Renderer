@@ -123,9 +123,7 @@ void Transform::Rotate(float rotation, const Vector3& axis)
 void Transform::Move(const Vector3& move)
 {
 	Vector3 localMove = Vector4(move, 1) * GetGlobalToLocalMatrix();
-	LocalMove(position);
-
-	UpdateLocalMatrix();
+	LocalMove(localMove);
 }
 
 const Vector3& Transform::GetForward() const

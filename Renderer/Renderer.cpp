@@ -38,7 +38,7 @@ void Renderer::Init(const char* texturePath)
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
-	textureManager.Init(texturePath, 0, TextureFiltering::Linear, TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode::Wrap);
+	textureManager.Init(texturePath, TextureFiltering::Linear, TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode::Wrap);
 	SetAutoRegister(true, true, true);
 
 	//init uniform buffers
@@ -75,12 +75,13 @@ void Renderer::Init(const char* texturePath)
 	//now setup skybox
 	auto* skyboxVert = Shader::InitNew("Shaders/skybox.vert", Shader::Type::Vertex);
 	skyboxMaterial.Init(*skyboxVert, *Shader::InitNew("Shaders/skybox.frag", Shader::Type::Fragment));
-	Texture2D* skymap = textureManager.LoadTextureParams("skymap.jpg", 0, TextureFiltering::Linear, TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode::MirrorWrap, GL_RGBA16F);
+	Texture2D* skymap = textureManager.LoadTextureParams("skymap.jpg", TextureFiltering::Linear, TextureMipMapFiltering::LinearMipMapLinear, TextureWrapMode::Wrap, GL_RGBA16F); //note: seam if mipmaps are used
 	skyboxMaterial.SetTextureSampler("_SkyMap", skymap);
 
-	//real quick make irradiance map
+	//NOW GENERATE IRRADIANCE MAP, PREFILTERED ENVIRONMENT MAP AND ENVIRONMENT BRDF LOOKUP TEXTURE
+	//real quick make irradiance map for image based lighting
 	//using local variables so that they will be deleted at the end
-	irradienceMap.InitEmpty(Vector2Int(32, 32), GL_RGBA16F, 0, TextureFiltering::Linear);
+	irradienceMap.InitEmpty(Vector2Int(256, 128), GL_RGBA16F, TextureFiltering::Linear, TextureMipMapFiltering::Linear);
 	Material irradienceMaterial;
 	Shader irrFrag;
 	irrFrag.Init("Shaders/irradience.frag", Shader::Type::Fragment);
@@ -98,31 +99,45 @@ void Renderer::Init(const char* texturePath)
 	}
 	localFrameBuffer.ClearUsed();
 	glGenerateTextureMipmap(irradienceMap.GetID());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (GLenum)TextureFiltering::Linear);
-	glViewport(0, 0, windowSize.x, windowSize.y);
 	//(hopefully) successfully created irradience map!!! any material that sets its pbr values will have the irradience map set as well
 
-	//and now make environment map
-	//once again, so, so cruel to the computer to use framebuffers like this
+	//and now make prefilter map
+	//once again i assume it is super cruel to the computer to use framebuffers like this
 	//i apologise to everyone with eyes for my sins
-	/*environmentMap.InitEmpty(skymap->GetSize(), GL_RGBA16F, 5);
-	localFrameBuffer = FrameBuffer();
-	localFrameBuffer.Init(&environmentMap, nullptr);
-	Material envMat;
-	Shader envFrag;
-	envFrag.Init("Shaders/environment.frag", Shader::Type::Fragment);
-	envMat.Init(envFrag, *skyboxVert);
+	Material prfMat;
+	Shader prfFrag;
+	prefilterMap.InitEmpty(Vector2Int(1024, 512), GL_RGBA16F, TextureFiltering::Linear, TextureMipMapFiltering::LinearMipMapLinear);
+	prfFrag.Init("Shaders/prefilter.frag", Shader::Type::Fragment);
+	prfMat.Init(prfFrag, *skyboxVert);
+	prfMat.SetTextureSampler("_SkyMap", skymap);
 	localFrameBuffer.Use();
 	{
-		for (int i = 0; i < 5; i++)
+		//const int mipMapCount = glm::ceil(glm::log2((float)prefilterMap.GetSize().x)) + 1;
+		const int mipMapCount = 5;
+	
+		for (int i = 0; i < mipMapCount; ++i)
 		{
-
+			prfMat.SetUniform("_Roughness", (float)i / 4.0f);
+			GLuint width = (unsigned int)(prefilterMap.GetSize().x * pow(0.5f, i));
+			GLuint height = (unsigned int)(prefilterMap.GetSize().y * pow(0.5f, i));
+			glViewport(0, 0, width, height);
+			//destroy the sanctity if my framebuffer by using this outside the class
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+				GL_TEXTURE_2D, prefilterMap.GetID(), i);
+			glClear(GL_COLOR_BUFFER_BIT);
+			prfMat.Use();
+			frameQuad.Render();
 		}
-		pow(0.5f, 0.5f)
-		envMat.Use();
-		frameQuad.Render();
+		
 	}
-	localFrameBuffer.ClearUsed();*/
+	localFrameBuffer.ClearUsed();
+	//and again, hopefully, the prefiltered environment map is created!!
+	//now just lazily load in a texture for the environment BRDF lookup texture, since it's the same no matter the skymap
+	brdfLookupTexture.Init((textureManager.GetTexturePath() + "brdf.png").c_str(), TextureFiltering::Linear, TextureMipMapFiltering::Linear, TextureWrapMode::Wrap, GL_RGBA16F);
+
+	//reset viewport
+	glViewport(0, 0, windowSize.x, windowSize.y);
+
 }
 
 void Renderer::Cleanup()
@@ -339,7 +354,7 @@ void Renderer::FindMainCamera()
 	}
 }
 
-void Renderer::SetPBRValues(Material* pbrMaterial, float roughnessMultiplier, const char* albedo, const char* normal, const char* roughness, const char* metallic, const char* ao, bool defaultMetallic, bool setIrradianceMap)
+void Renderer::SetPBRValues(Material* pbrMaterial, float roughnessMultiplier, float metallicityMultiplier, const char* albedo, const char* normal, const char* roughness, const char* metallic, const char* ao, bool setIBLMaps)
 {
 	if (!pbrMaterial)
 		return;
@@ -347,7 +362,7 @@ void Renderer::SetPBRValues(Material* pbrMaterial, float roughnessMultiplier, co
 	if (albedo)
 		pbrMaterial->SetTextureSampler("_AlbedoMap", textureManager.LoadTexture(albedo));
 	else
-		pbrMaterial->SetTextureSampler("_AlbedoMap", textureManager.LoadTexture("white.png"));
+		pbrMaterial->SetTextureSampler("_AlbedoMap", textureManager.GetDefaultTexture());
 
 	if (normal)
 		pbrMaterial->SetTextureSampler("_NormalMap", textureManager.LoadTexture(normal));
@@ -357,28 +372,33 @@ void Renderer::SetPBRValues(Material* pbrMaterial, float roughnessMultiplier, co
 	if (roughness)
 		pbrMaterial->SetTextureSampler("_RoughnessMap", textureManager.LoadTexture(roughness));
 	else
-		pbrMaterial->SetTextureSampler("_RoughnessMap", textureManager.LoadTexture("white.png"));
+		pbrMaterial->SetTextureSampler("_RoughnessMap", textureManager.GetDefaultTexture());
 
 	if (metallic)
 		pbrMaterial->SetTextureSampler("_MetallicMap", textureManager.LoadTexture(metallic));
 	else
-	{
-		if (defaultMetallic)
-			pbrMaterial->SetTextureSampler("_MetallicMap", textureManager.LoadTexture("white.png"));
-		else
-			pbrMaterial->SetTextureSampler("_MetallicMap", nullptr);
-	}
+		pbrMaterial->SetTextureSampler("_MetallicMap", textureManager.GetDefaultTexture());
 
 	if (ao)
 		pbrMaterial->SetTextureSampler("_AmbientOcclusionMap", textureManager.LoadTexture(ao));
 	else
-		pbrMaterial->SetTextureSampler("_AmbientOcclusionMap", textureManager.LoadTexture("white.png"));
+		pbrMaterial->SetTextureSampler("_AmbientOcclusionMap", textureManager.GetDefaultTexture());
 
-	if (setIrradianceMap)
+	if (setIBLMaps)
+	{
 		pbrMaterial->SetTextureSampler("_IrradienceMap", &irradienceMap);
+		pbrMaterial->SetTextureSampler("_PrefilterMap", &prefilterMap);
+		pbrMaterial->SetTextureSampler("_BRDFMap", &brdfLookupTexture);
+	}
 	else
+	{
 		pbrMaterial->SetTextureSampler("_IrradienceMap", nullptr);
+		pbrMaterial->SetTextureSampler("_PrefilterMap", nullptr);
+		pbrMaterial->SetTextureSampler("_BRDFMap", nullptr);
+
+	}
 
 	pbrMaterial->SetUniform("_Material.roughness", roughnessMultiplier);
+	pbrMaterial->SetUniform("_Material.metallicity", metallicityMultiplier);
 }
 

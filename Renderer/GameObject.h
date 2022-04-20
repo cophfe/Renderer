@@ -35,12 +35,12 @@ public:
 	GameObject& operator=(const GameObject& other) = delete;
 	GameObject(GameObject&& other);
 	GameObject& operator=(GameObject&& other);
+	GameObject* Copy();
 private:
 	static unsigned int idCounter;
-	unsigned int id;
+	int id;
 
 	GameObject() = default;
-	GameObject* Copy();
 
 	bool enabled;
 	std::vector<Component*> components;

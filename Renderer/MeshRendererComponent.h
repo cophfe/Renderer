@@ -10,6 +10,9 @@ class MeshRendererComponent :
 public:
 	void Init(Mesh* mesh, Material* material);
 	void Render() const;
+
+	inline void SetMesh(Mesh* mesh) { this->mesh = mesh; }
+	inline void SetMaterial(Material* material) { this->material = material; }
 private:
 	// Inherited via Component
 	virtual Component* Clone() const override;
