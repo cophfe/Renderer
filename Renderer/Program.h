@@ -78,6 +78,13 @@ private:
 	bool windowFocused = true;
 	bool initiated;
 
+	//light stuff
+	std::vector<LightComponent*> pointLights;
+	Mesh* lightMesh;
+	Shader* lightVert;
+	Shader* lightFrag;
+	int lightIndex = 0;
+
 	const float shaderRecompileTime = 1;
 	float shaderRecompileTimer;
 	Vector2 cursorPosition;

@@ -110,19 +110,19 @@ void Program::Init()
 		auto fileName = file.path();
 		auto stem = fileName.stem().string();
 		auto ext = fileName.extension().string();
-
+	
 		std::string ao = "";
 		std::string albedo = "";
 		std::string metal = "";
 		std::string normal = "";
 		std::string roughness = "";
-
+	
 		if (!(ext == ".fbx" || ext == ".obj"))
 			continue;
-
+	
 		Mesh* mesh = MeshBuilder::LoadMeshFromPath(fileName.string().c_str());
 		Material* mat = Material::InitNew(*pbrFrag, *pbrVert);
-
+	
 		auto texPath = fs::path("Textures/" + stem);
 		auto filePath = stem + "/";
 		for (const auto& tex : fs::directory_iterator(texPath))
@@ -130,10 +130,10 @@ void Program::Init()
 			auto texPath = tex.path();
 			auto texStem = texPath.stem().string();
 			auto texExt = texPath.extension().string();
-
+	
 			if (texExt != ".tga" && texExt != ".png" && texExt != ".jpg")
 				continue;
-
+	
 			if (texStem == "ao")
 				ao = filePath + texPath.filename().string();
 			else if (texStem == "albedo")
@@ -171,6 +171,12 @@ void Program::Init()
 	stage->GetTransform().SetLocalPosition(Vector3(0, -4.0f, -7));
 	stage->GetTransform().SetLocalScale(Vector3(40.0f, 0.5f, 8.0f));
 	renderer.SetPBRValues(stageMat, 0.5f, 0.2f);
+
+	lightVert = Shader::InitNew("Shaders/unlit.vert", Shader::Type::Vertex);
+	lightFrag = Shader::InitNew("Shaders/unlit.frag", Shader::Type::Fragment);
+
+	//also load sphere
+	lightMesh = MeshBuilder::LoadMeshFromPath("Models/Sphere.obj");
 	initiated = true;
 }
 
@@ -291,7 +297,6 @@ void Program::MouseReleased(int button)
 {
 	if (button == 0)
 	{
-		static std::vector<LightComponent*> lCs; //pls ignore this line
 		Vector3 lum = Vector3((float)rand() / RAND_MAX, (float)rand() / RAND_MAX, (float)rand() / RAND_MAX);
 
 		//this is a way to make a color highly saturated, yoinked from a javascript project of mine
@@ -309,19 +314,26 @@ void Program::MouseReleased(int button)
 		}
 		lum[min] = 0;
 		lum[max] = 1.0f;
-		lum *= 10.0f;
 
-		if (lCs.size() >= 6)
+		if (pointLights.size() >= 6)
 		{
-			lCs[0]->SetLuminance(lum);
-			lCs[0]->GetTransform().SetPosition(renderer.GetMainCamera()->GetTransform().GetPosition());
+			pointLights[lightIndex]->SetLuminance(lum * 20.0f);
+			pointLights[lightIndex]->GetTransform().SetLocalPosition(renderer.GetMainCamera()->GetTransform().GetLocalPosition());
+			pointLights[lightIndex]->GetGameObject()->GetComponentOfType<MeshRendererComponent>()->GetMaterial()->SetUniform("_Colour", lum);
+			lightIndex = (lightIndex + 1) % 6;
 		}
 		else {
 			auto* gO = GameObject::Create();
 			auto* lO = gO->AddComponent<LightComponent>();
-			lO->Init(lum, 20.0f, LightType::POINT);
-			gO->GetTransform().SetPosition(renderer.GetMainCamera()->GetTransform().GetPosition());
-			lCs.push_back(lO);
+			Material* lightMat = Material::InitNew(*lightVert, *lightFrag);
+			
+			gO->AddComponent<MeshRendererComponent>()->Init(lightMesh, lightMat);
+			lightMat->SetUniform("_Colour", lum);
+
+			lO->Init(lum * 20.0f, 20.0f, LightType::POINT);
+			gO->GetTransform().SetLocalPosition(renderer.GetMainCamera()->GetTransform().GetLocalPosition());
+			gO->GetTransform().SetLocalScale(0.1f);
+			pointLights.push_back(lO);
 		}
 	}
 }

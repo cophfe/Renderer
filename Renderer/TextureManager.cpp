@@ -42,7 +42,10 @@ Texture2D* TextureManager::LoadTexture(const char* name)
 	{
 		Texture2D* tex = Texture2D::InitNew((path + std::string(name)).c_str(), textureFiltering, mipMapFiltering, wrapMode);
 		if (tex == nullptr)
+		{
 			return defaultTexture;
+
+		}
 		map.insert(std::make_pair(std::string(name), tex));
 		return tex;
 	}

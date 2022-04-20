@@ -13,6 +13,8 @@ public:
 
 	inline void SetMesh(Mesh* mesh) { this->mesh = mesh; }
 	inline void SetMaterial(Material* material) { this->material = material; }
+	inline Mesh* GetMesh() { return mesh; }
+	inline Material* GetMaterial() { return material; }
 private:
 	// Inherited via Component
 	virtual Component* Clone() const override;

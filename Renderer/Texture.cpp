@@ -80,8 +80,12 @@ Texture2D* Texture2D::InitNew(const char* path, TextureFiltering textureFilterin
 	TextureMipMapFiltering mipMapFiltering, TextureWrapMode wrapMode, GLenum internalFormat)
 {
 	Texture2D* tex = new Texture2D();
-	
-	return tex->Init(path, textureFiltering, mipMapFiltering, wrapMode, internalFormat);
+	if (!tex->Init(path, textureFiltering, mipMapFiltering, wrapMode, internalFormat))
+	{
+		delete tex;
+		return nullptr;
+	}
+		return tex;
 }
 
 Texture2D* Texture2D::InitNewEmpty(Vector2Int size, GLenum internalFormat, TextureFiltering textureFiltering, 

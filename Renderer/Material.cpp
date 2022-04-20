@@ -222,19 +222,19 @@ void Material::SetUniform(int id, float value) const
 void Material::SetUniform(int id, const Vector2& value) const
 {
 	Use();
-	glUniform1fv(id, 2, (GLfloat*)&(value[0]));
+	glUniform2f(id, value.x, value.y);
 }
 
 void Material::SetUniform(int id, const Vector3& value) const
 {
 	Use();
-	glUniform1fv(id, 3, (GLfloat*)&(value[0]));
+	glUniform3f(id, value.x, value.y, value.z);
 }
 
 void Material::SetUniform(int id, const Vector4& value) const
 {
 	Use();
-	glUniform1fv(id, 4, (GLfloat*)&(value[0]));
+	glUniform4f(id, value.x, value.y, value.z, value.w);
 }
 
 void Material::SetUniform(int id, const Matrix3x3& value, GLboolean transpose) const
