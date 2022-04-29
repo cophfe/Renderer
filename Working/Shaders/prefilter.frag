@@ -87,7 +87,7 @@ void main()
 	float weight = 0;
 	vec3 colour = vec3(0);
 
-	//use monte carlo integration to get a estimation of the colour using random samples
+	//use monte carlo integration to get a estimation of the colour using 'random' direction samples
 	//'random' samples are biased to more important ones in order to converge on an answer faster
 	for (int i = 0; i < SAMPLE_COUNT; ++i)
 	{

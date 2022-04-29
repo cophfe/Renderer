@@ -124,7 +124,7 @@ float Geometry(float nDV, float nDL, float roughness)
     //remapped roughness
     float k = roughness + 1;
     k = (k * k) / 8.0;
-    //k with image based lighting:
+    //k with image based lighting is supposed to be this but it real broke so we can just pretend its ok:
     //float k = roughness * roughness / 2;
     return (nDV / (nDV * (1.0 - k) + k)) * (nDL / (nDL * (1.0 - k) + k));
 
@@ -178,7 +178,7 @@ void main()
 		float lightPowerMultiplier = 1.0;
 
 		//i am using this like a c switch when I should be using it as a glsl switch
-		//aka i am concerned this breaks the non branchingness of gpus. hopefully we good? 
+		//aka i am concerned this breaks the non branchingness of gpus. hopefully we good? this should run the same for all fragments
 		switch(_Lights[i].type)
         {
             case 0: // directional light
@@ -202,14 +202,9 @@ void main()
         float nDL = max(dot(normalWS, lightDirection), 0.0);
 
     	float distribution = Distribution(nDH, roughness);
-        //this fresnel literally doesn't take into account normal so it doesn't make sense that it works
-        //vec3 fresnel = Fresnel(viewDirection, halfDir, r0);  and it doesn't work, for me, but it does for learnopengl somehow so thats interesting
         vec3 fresnel = Fresnel(viewDirection, halfDir, r0);
     	float geometry = Geometry(nDV, nDL, roughness);
     	
-        //float oneMinusCosTheta = 1 - max(dot(viewDir, halfDir), 0);
-        // return r0 + (1.0 - r0) * pow(oneMinusCosTheta, 5.0);
-
 		vec3 s = (distribution*fresnel*geometry) 
 			/ max(4 * nDV * nDL, 0.00001); //the 0.00001 is super important, it will break sometimes without it
     
@@ -218,7 +213,7 @@ void main()
 		//now we don't need a seperate pipeline for metal and non metal stuff, and they can be lerped between for smooth edges n stuff (aka physics got absolutely scammed, hooray)
 		vec3 kD = (vec3(1) - fresnel) * (1 - metallicity);
 
-		//final output luminance (timesed by nDL because i have no idea (it makes sense why the diffuse, but i thought the geometry value took that into account for specular))
+		//final output luminance needs to be timesed by surface normal dot light dir
 		outputColour += (s + kD * albedoColour / PI_VALUE) * lightPower * nDL;
         //outputColour = fresnel;
     }
